@@ -79,10 +79,12 @@
 //#include  <bsp_int.h>
 
 
+extern OS_MUTEX					g_mutex_printf;			//互斥锁的对象
+extern OS_FLAG_GRP   			g_flag_grp;				//事件标志组	
 
 
 //事件标志组：硬件使用到的标志位
-#define FLAG_GRP_LED_1_OK					0x01
+#define FLAG_GRP_RTC_WAKEUP					0x01
 #define FLAG_GRP_LED_2_OK					0x02
 #define FLAG_GRP_OPEN_ADC_CTRL				0x04
 #define	FLAG_GRP_OPEN_PAJ7620				0x08

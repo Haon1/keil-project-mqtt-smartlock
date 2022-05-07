@@ -1,17 +1,6 @@
 #ifndef _RTC_
 #define _RTC_
 
-
-uint8_t year;
-uint8_t month;
-uint8_t day;
-uint8_t week;
-uint8_t hour;
-uint8_t min;
-uint8_t sec;
-
-
-extern volatile uint8_t g_rtc_wakeup_event;
 extern volatile uint8_t g_rtc_alarm_A_event;
 
 // 22 5 6 5 12 33 30   年 月 日 星期 时 分 秒

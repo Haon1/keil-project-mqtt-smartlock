@@ -2,8 +2,6 @@
 #include "sys.h"
 #include "includes.h"
 
-
-volatile uint8_t g_rtc_wakeup_event = 0;
 volatile uint8_t g_rtc_alarm_A_event = 0;
 
 
@@ -313,8 +311,7 @@ void RTC_WKUP_IRQHandler(void)
 	OSIntEnter();
 	if(RTC_GetITStatus(RTC_IT_WUT) != RESET)
 	{
-		
-		g_rtc_wakeup_event=1;
+		OSFlagPost(&g_flag_grp,FLAG_GRP_RTC_WAKEUP,OS_OPT_POST_FLAG_SET,&err);
 		
 		//清空RTC的唤醒中断标志位
 		RTC_ClearITPendingBit(RTC_IT_WUT);

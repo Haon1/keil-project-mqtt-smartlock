@@ -39,8 +39,11 @@ extern int	 mqtt_connect_flag;				//连接到MQTT标志位
 //连接参数初始化
 void AliIoT_Parameter_Init(void);
 
+//计算剩余长度,返回所用字节数
+int mqtt_packet_encode(unsigned char *buf, int length);
+
 //MQTT连接服务器
-int32_t mqtt_connect(char *client_id,char *user_name,char *password);
+int32_t mqtt_connect_packet(void);
 
 //MQTT消息订阅
 int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether);

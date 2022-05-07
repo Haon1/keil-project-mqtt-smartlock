@@ -114,37 +114,50 @@ void mqtt_disconnect(void)
 }
 
 
-//MQTT连接服务器的打包函数
-int32_t mqtt_connect(char *client_id,char *user_name,char *password)
+/**
+ * @brief 计算剩余长度并返回占用字节数
+ * 
+ * @param buf 转换后要存放的地址
+ * @param length 要转换的字节数
+ * @return int 转换后占用的字节数
+ */
+int mqtt_packet_encode(unsigned char *buf, int length)
 {
-    uint32_t client_id_len = strlen(client_id);
-    uint32_t user_name_len = strlen(user_name);
-    uint32_t password_len = strlen(password);
+    int bytes = 0;
+ 
+    do {
+        char d = length % 128;
+        length /= 128;
+        /* if there are more digits to encode, set the top bit of this digit */
+        if (length > 0) {
+            d |= 0x80;
+        }
+        buf[bytes++] = d;
+    } while (length > 0);
+    return bytes;
+}
+
+//MQTT连接服务器的打包函数
+int32_t mqtt_connect_packet(void)
+{
     uint32_t data_len;
     uint32_t cnt=2;
     uint32_t wait=0;
     g_mqtt_tx_len=0;
 	
     //可变报头+Payload  每个字段包含两个字节的长度标识
-    data_len = 10 + (client_id_len+2) + (user_name_len+2) + (password_len+2);
+    data_len = 10 + (CLIENTID_LEN+2) + (USERNAME_LEN+2) + (PASSWD_LEN+2);
 
     //固定报头
     //控制报文类型
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x10;		//MQTT Message Type CONNECT
+	g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x10;		//MQTT Message Type CONNECT
     //剩余长度(不包括固定头部)
-    do
-    {
-        uint8_t encodedByte = data_len % 128;
-        data_len = data_len / 128;
-        // if there are more data to encode, set the top bit of this byte
-        if ( data_len > 0 )
-            encodedByte = encodedByte | 128;
-        g_esp8266_tx_buf[g_mqtt_tx_len++] = encodedByte;
-    } while ( data_len > 0 );
+	g_mqtt_tx_len += mqtt_packet_encode(&g_esp8266_tx_buf[g_mqtt_tx_len], data_len);
+	
 
     //可变报头
     //协议名
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = 0;        	// Protocol Name Length MSB
+	g_esp8266_tx_buf[g_mqtt_tx_len++] = 0;        	// Protocol Name Length MSB
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 4;        	// Protocol Name Length LSB
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 'M';        // ASCII Code for M
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 'Q';        // ASCII Code for Q
@@ -157,25 +170,25 @@ int32_t mqtt_connect(char *client_id,char *user_name,char *password)
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 0;        	// Keep-alive Time Length MSB
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 60;        	// Keep-alive Time Length LSB  60S心跳包
 
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(client_id_len);// Client ID length MSB
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(client_id_len);// Client ID length LSB
-    memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],client_id,client_id_len);
-    g_mqtt_tx_len += client_id_len;
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(CLIENTID_LEN);// Client ID length MSB
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(CLIENTID_LEN);// Client ID length LSB
+    memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],MQTT_CLIENTID,CLIENTID_LEN);
+    g_mqtt_tx_len += CLIENTID_LEN;
 
-    if(user_name_len > 0)
+    if(USERNAME_LEN > 0)
     {
-        g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(user_name_len);		//user_name length MSB
-        g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(user_name_len);    	//user_name length LSB
-        memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],user_name,user_name_len);
-        g_mqtt_tx_len += user_name_len;
+        g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(USERNAME_LEN);		//user_name length MSB
+        g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(USERNAME_LEN);    	//user_name length LSB
+        memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],MQTT_USERNAME,USERNAME_LEN);
+        g_mqtt_tx_len += USERNAME_LEN;
     }
 
-    if(password_len > 0)
+    if(PASSWD_LEN > 0)
     {
-        g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(password_len);		//password length MSB
-        g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(password_len);    	//password length LSB
-        memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],password,password_len);
-        g_mqtt_tx_len += password_len;
+        g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(PASSWD_LEN);		//password length MSB
+        g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(PASSWD_LEN);    	//password length LSB
+        memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],MQTT_PASSWD,PASSWD_LEN);
+        g_mqtt_tx_len += PASSWD_LEN;
     }
 
 	
@@ -232,8 +245,6 @@ int32_t mqtt_connect(char *client_id,char *user_name,char *password)
 //whether     订阅/取消订阅请求包
 int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether)
 {
-    
-	
     uint32_t cnt=2;
     uint32_t wait=0;
 	
@@ -251,15 +262,7 @@ int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether)
 		g_esp8266_tx_buf[g_mqtt_tx_len++] = 0xA2; //取消订阅
 
     //剩余长度
-    do
-    {
-        uint8_t encodedByte = data_len % 128;
-        data_len = data_len / 128;
-        // if there are more data to encode, set the top bit of this byte
-        if ( data_len > 0 )
-            encodedByte = encodedByte | 128;
-        g_esp8266_tx_buf[g_mqtt_tx_len++] = encodedByte;
-    } while ( data_len > 0 );
+	g_mqtt_tx_len += mqtt_packet_encode(&g_esp8266_tx_buf[g_mqtt_tx_len], data_len);
 
     //可变报头
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 0;				//消息标识符 MSB
@@ -332,8 +335,7 @@ int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether)
 //qos     消息等级
 uint32_t mqtt_publish_data(char *topic, char *message, uint8_t qos)
 {
-static 
-	uint16_t id=0;	
+	static uint16_t id=0;	
     uint32_t topicLength = strlen(topic);
     uint32_t messageLength = strlen(message);
 
@@ -350,17 +352,9 @@ static
     //固定报头
     //控制报文类型
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x30;    // MQTT Message Type PUBLISH
-
+	
     //剩余长度
-    do
-    {
-        encodedByte = data_len % 128;
-        data_len = data_len / 128;
-        // if there are more data to encode, set the top bit of this byte
-        if ( data_len > 0 )
-            encodedByte = encodedByte | 128;
-        g_esp8266_tx_buf[g_mqtt_tx_len++] = encodedByte;
-    } while ( data_len > 0 );
+	g_mqtt_tx_len += mqtt_packet_encode(&g_esp8266_tx_buf[g_mqtt_tx_len], data_len);
 
     g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(topicLength);//主题长度MSB
     g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(topicLength);//主题长度LSB
@@ -383,7 +377,6 @@ static
 	
 
 	mqtt_send_bytes(g_esp8266_tx_buf,g_mqtt_tx_len);
-	
 	
 	//咱们的Qos等级设置的是00，因此阿里云物联网平台是没有返回响应信息的
 	
@@ -420,6 +413,7 @@ void mqtt_report_devices_status(void)
     mqtt_publish_data(MQTT_PUBLISH_TOPIC,(char *)g_esp8266_tx_buf,0);
 }
 
+
 int32_t esp8266_mqtt_init(void)
 {
 	int32_t rt;
@@ -444,7 +438,7 @@ int32_t esp8266_mqtt_init(void)
 	printf("esp8266_entry_transparent_transmission success\r\n");
 	delay_ms(2000);
 	
-	if(mqtt_connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_PASSWD))
+	if(mqtt_connect_packet())
 	{
 		printf("mqtt_connect fail\r\n");
 		return -4;	

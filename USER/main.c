@@ -137,7 +137,7 @@ void task_system_init(void *parg)
 	
 	//LED_Init();         												//LED初始化	
 	rgb_led_init();
-	//AliIoT_Parameter_Init();
+	AliIoT_Parameter_Init();
 	
 	//年月日星期时分秒
 	rtc_init(22,5,6,5,0,9,30);		//手动设置时间
@@ -205,6 +205,7 @@ void task_rgb_led(void *parg)
 //rtc 
 void task_rtc(void *parg)
 {
+	OS_ERR err;
 	RTC_TimeTypeDef  RTC_TimeStructure;
 	RTC_DateTypeDef  RTC_DateStructure;
 	
@@ -213,8 +214,9 @@ void task_rtc(void *parg)
 
 	while(1)
 	{
-		if(g_rtc_wakeup_event)
-		{
+		OSFlagPend(&g_flag_grp,FLAG_GRP_RTC_WAKEUP,0,OS_OPT_PEND_FLAG_SET_ALL +\
+													OS_OPT_PEND_FLAG_CONSUME + \
+													OS_OPT_PEND_BLOCKING, NULL, &err);
 			//获取日期
 			RTC_GetDate(RTC_Format_BCD,&RTC_DateStructure);
 			printf("20%02x/%02x/%02x Week:%x ",RTC_DateStructure.RTC_Year,RTC_DateStructure.RTC_Month,RTC_DateStructure.RTC_Date,RTC_DateStructure.RTC_WeekDay);			
@@ -223,8 +225,6 @@ void task_rtc(void *parg)
 			RTC_GetTime(RTC_Format_BCD,&RTC_TimeStructure);
 			printf("%02x:%02x:%02x\r\n",RTC_TimeStructure.RTC_Hours,RTC_TimeStructure.RTC_Minutes,RTC_TimeStructure.RTC_Seconds);
 			
-			g_rtc_wakeup_event = 0;
-		}
 	}
 }
 

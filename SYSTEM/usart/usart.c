@@ -169,7 +169,7 @@ void usart2_send_bytes(uint8_t *buf,uint32_t len)
 
 void USART1_IRQHandler(void)                	//串口1中断服务程序
 {
-	uint8_t d=0;
+	//uint8_t d=0;
 
 	//进入中断
 	OSIntEnter();    
@@ -177,7 +177,7 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)  //接收中断(接收到的数据必须是0x0d 0x0a结尾)
 	{
 		//接收串口数据
-		d=USART_ReceiveData(USART1);	
+		//d=USART_ReceiveData(USART1);	
 		
 		//清空串口接收中断标志位
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
