@@ -1,0 +1,7 @@
+#ignore an entry directory
+/OBJ/
+/USER/DebugConfig/
+
+#ignore a type file
+Template.uvguix.*
+*Log.txt
