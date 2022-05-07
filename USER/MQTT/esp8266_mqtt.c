@@ -8,6 +8,7 @@
 #include "esp8266.h"
 #include "esp8266_mqtt.h"
 #include "utils_hmac.h"
+#include "includes.h"
 
 
 
@@ -23,7 +24,22 @@ int  USERNAME_LEN;
 char MQTT_PASSWD[128]; 				//密码   
 int  PASSWD_LEN;
 
-int	 mqtt_connect_flag;				//连接到MQTT标志位
+
+unsigned char  MQTT_RxDataBuf[R_NUM][BUFF_UNIT];            //数据的接收缓冲区,所有服务器发来的数据，存放在该缓冲区,缓冲区第一个字节存放数据长度
+unsigned char *MQTT_RxDataInPtr;                            //指向接收缓冲区存放数据的位置
+unsigned char *MQTT_RxDataOutPtr;                           //指向接收缓冲区读取数据的位置
+unsigned char *MQTT_RxDataEndPtr;                           //指向接收缓冲区结束的位置
+
+unsigned char  MQTT_TxDataBuf[T_NUM][BUFF_UNIT];            //数据的发送缓冲区,所有发往服务器的数据，存放在该缓冲区,缓冲区第一个字节存放数据长度
+unsigned char *MQTT_TxDataInPtr;                            //指向发送缓冲区存放数据的位置
+unsigned char *MQTT_TxDataOutPtr;                           //指向发送缓冲区读取数据的位置
+unsigned char *MQTT_TxDataEndPtr;                           //指向发送缓冲区结束的位置
+
+unsigned char  MQTT_CMDBuf[C_NUM][BUFF_UNIT];               //命令数据的接收缓冲区
+unsigned char *MQTT_CMDInPtr;                               //指向命令缓冲区存放数据的位置
+unsigned char *MQTT_CMDOutPtr;                              //指向命令缓冲区读取数据的位置
+unsigned char *MQTT_CMDEndPtr;                              //指向命令缓冲区结束的位置
+
 
 
 /*----------------------------------------------------------*/
@@ -58,6 +74,55 @@ void AliIoT_Parameter_Init(void)
 	printf("用 户 名：%s\r\n",MQTT_USERNAME);               //串口输出调试信息
 	printf("密    码：%s\r\n",MQTT_PASSWD);               //串口输出调试信息
 	printf("\r\n");
+}
+
+//缓冲区初始化
+void mqtt_buffer_init(void)
+{
+	MQTT_RxDataInPtr=MQTT_RxDataBuf[0];               //指向发送缓冲区存放数据的指针归位
+	MQTT_RxDataOutPtr=MQTT_RxDataInPtr;               //指向发送缓冲区读取数据的指针归位
+    MQTT_RxDataEndPtr=MQTT_RxDataBuf[R_NUM-1];        //指向发送缓冲区结束的指针归位
+	
+	MQTT_TxDataInPtr=MQTT_TxDataBuf[0];               //指向发送缓冲区存放数据的指针归位
+	MQTT_TxDataOutPtr=MQTT_TxDataInPtr;               //指向发送缓冲区读取数据的指针归位
+	MQTT_TxDataEndPtr=MQTT_TxDataBuf[T_NUM-1];        //指向发送缓冲区结束的指针归位
+	
+	MQTT_CMDInPtr=MQTT_CMDBuf[0];                     //指向命令缓冲区存放数据的指针归位
+	MQTT_CMDOutPtr=MQTT_CMDInPtr;                     //指向命令缓冲区读取数据的指针归位
+	MQTT_CMDEndPtr=MQTT_CMDBuf[C_NUM-1];              //指向命令缓冲区结束的指针归位
+}
+
+
+/*----------------------------------------------------------*/
+/*函数名：处理发送缓冲区                                    */
+/*参  数：data：数据                                        */
+/*参  数：size：数据长度                                    */
+/*返回值：无                                                */
+/*----------------------------------------------------------*/
+void TxDataBuf_Deal(unsigned char *data, int size)
+{
+	memcpy(&MQTT_TxDataInPtr[2],data,size);      //拷贝数据到发送缓冲区	
+	MQTT_TxDataInPtr[0] = BYTE1(size);              //记录数据长度
+	MQTT_TxDataInPtr[1] = BYTE0(size);              //记录数据长度
+	MQTT_TxDataInPtr+=BUFF_UNIT;                 //指针下移
+	if(MQTT_TxDataInPtr==MQTT_TxDataEndPtr)      //如果指针到缓冲区尾部了
+		MQTT_TxDataInPtr = MQTT_TxDataBuf[0];    //指针归位到缓冲区开头
+}
+
+/*----------------------------------------------------------*/
+/*函数名：处理接收缓冲区                                    */
+/*参  数：data：数据                                        */
+/*参  数：size：数据长度                                    */
+/*返回值：无                                                */
+/*----------------------------------------------------------*/
+void RxDataBuf_Deal(unsigned char *data, int size)
+{
+	memcpy(&MQTT_RxDataInPtr[2],data,size);      //拷贝数据到发送缓冲区	
+	MQTT_RxDataInPtr[0] = BYTE1(size);              //记录数据长度
+	MQTT_RxDataInPtr[1] = BYTE0(size);              //记录数据长度
+	MQTT_RxDataInPtr+=BUFF_UNIT;                 //指针下移
+	if(MQTT_RxDataInPtr==MQTT_RxDataEndPtr)      //如果指针到缓冲区尾部了
+		MQTT_RxDataInPtr = MQTT_RxDataBuf[0];    //指针归位到缓冲区开头
 }
 
 //MQTT发送数据
@@ -413,11 +478,14 @@ void mqtt_report_devices_status(void)
     mqtt_publish_data(MQTT_PUBLISH_TOPIC,(char *)g_esp8266_tx_buf,0);
 }
 
-
+//连接broker  发送连接报文 订阅主题
 int32_t esp8266_mqtt_init(void)
 {
-	int32_t rt;
-		
+	int32_t 	rt;
+	OS_ERR 		err;
+	
+	//清空连接标志位
+	OSFlagPost(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,OS_OPT_POST_FLAG_CLR,&err);
 	
 	rt =esp8266_connect_server("TCP",MQTT_BROKERADDRESS,1883);
 	if(rt)
@@ -426,6 +494,7 @@ int32_t esp8266_mqtt_init(void)
 		return -2;
 	}	
 	printf("esp8266_connect_server success\r\n");
+	
 	delay_ms(2000);
 	
 	//进入透传模式
@@ -438,21 +507,24 @@ int32_t esp8266_mqtt_init(void)
 	printf("esp8266_entry_transparent_transmission success\r\n");
 	delay_ms(2000);
 	
+	//设置连接标志位
+	OSFlagPost(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,OS_OPT_POST_FLAG_SET,&err);
+	
+	//发送连接报文
 	if(mqtt_connect_packet())
 	{
 		printf("mqtt_connect fail\r\n");
 		return -4;	
-	
 	}
 	printf("mqtt_connect success\r\n");
 	delay_ms(2000);		
 	
+	//订阅报文 
 	if(mqtt_subscribe_topic(MQTT_SUBSCRIBE_TOPIC,0,1))
 	{
 		printf("mqtt_subscribe_topic fail\r\n");
 		return -5;
 	}	
-	
 	printf("mqtt_subscribe_topic success\r\n");
 	
 	return 0;

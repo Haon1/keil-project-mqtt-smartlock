@@ -85,8 +85,8 @@ extern OS_FLAG_GRP   			g_flag_grp;				//事件标志组
 
 //事件标志组：硬件使用到的标志位
 #define FLAG_GRP_RTC_WAKEUP					0x01
-#define FLAG_GRP_LED_2_OK					0x02
-#define FLAG_GRP_OPEN_ADC_CTRL				0x04
+#define FLAG_GRP_MQTT_CONNECT				0x02
+#define FLAG_GRP_ESP8266_RX_END				0x04
 #define	FLAG_GRP_OPEN_PAJ7620				0x08
 
 

@@ -1,6 +1,8 @@
 #include <stm32f4xx.h>
 #include "sys.h"
 #include "esp8266.h"
+#include "esp8266_mqtt.h"
+#include "includes.h"
 
 
 static TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
@@ -28,18 +30,31 @@ void tim3_init(void)
 	//使能tim3	时间更新中断
 	TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
 	
-	TIM_Cmd(TIM3, ENABLE);		//使能TIM3工作	
+	TIM_Cmd(TIM3, DISABLE);		//默认关闭
 }
 
 void TIM3_IRQHandler(void)
 {
+	OS_ERR 		err;
+	//进入中断
+	OSIntEnter(); 
+	
 	if(TIM_GetITStatus(TIM3, TIM_IT_Update)==SET)
 	{
-		g_esp8266_rx_end = 1;		//接收完成
+		RxDataBuf_Deal(g_esp8266_rx_buf, g_esp8266_rx_cnt);
 		
-		TIM_Cmd(TIM3, DISABLE);                        				  //关闭TIM4定时器
-		TIM_SetCounter(TIM3, 0);    
+		memset((char *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
+		g_esp8266_rx_cnt = 0;
+		
+		//设置标志位
+		OSFlagPost(&g_flag_grp,FLAG_GRP_ESP8266_RX_END,OS_OPT_POST_FLAG_SET,&err);
+		
+		TIM_Cmd(TIM3, DISABLE);                        				  //关闭TIM3定时器
+		TIM_SetCounter(TIM3, 0);    								 //重新设置计数值为0
 		TIM_ClearITPendingBit(TIM3,TIM_IT_Update);
 	}
+	
+	//退出中断
+	OSIntExit();
 }
 

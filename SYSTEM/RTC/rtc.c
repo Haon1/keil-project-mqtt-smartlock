@@ -237,7 +237,7 @@ int32_t sync_local_time(void)
 	time_t T;				//时间戳
 	
 	
-	if( RTC_ReadBackupRegister(RTC_BKP_DR0) != 0x80 )	//读取备份寄存器
+	if( RTC_ReadBackupRegister(RTC_BKP_DR0) != BACKUP_FLAG )	//读取备份寄存器
 	{
 		printf("sync time from network\r\n");
 		if(esp8266_get_network_time())
@@ -252,16 +252,17 @@ int32_t sync_local_time(void)
 		//用结构体初始化rtc
 		rtc_init(t);
 		
+		RTC_WriteBackupRegister(RTC_BKP_DR0, BACKUP_FLAG);	//写入备份寄存器
 		
-		RTC_WriteBackupRegister(RTC_BKP_DR0, 0x80);	//写入备份寄存器
+		return 1;
 	}
 	else
 	{
 		printf("sync time from back dr0\r\n");
 		//从备份寄存器恢复时间
 		rtc_init_from_bkp_dr0();
+		return 2;
 	}
-	return 0;
 }
 
 //设置闹钟 10-30-20

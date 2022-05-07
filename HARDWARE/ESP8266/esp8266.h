@@ -21,14 +21,13 @@
 extern uint8_t  g_esp8266_tx_buf[512];
 extern volatile uint8_t  g_esp8266_rx_buf[1024];
 extern volatile uint32_t g_esp8266_rx_cnt;
-extern volatile uint32_t g_esp8266_rx_end;
 
 extern volatile uint32_t g_esp8266_transparent_transmission_sta;
 
 
 void 		esp8266_reset_io_init(void);	//复位引脚初始化
 int 		esp8266_reset(int timeout);		//物理复位
-int32_t 		esp8266_init(void);
+int32_t 	esp8266_init(void);
 int32_t  	esp8266_self_test(void);
 int32_t 	esp8266_exit_transparent_transmission (void);
 int32_t 	esp8266_entry_transparent_transmission(void);

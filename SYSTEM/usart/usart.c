@@ -191,8 +191,9 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 //esp8266使用串口2
 void USART2_IRQHandler(void)                	//串口2中断服务程序
 {
-	uint8_t d=0;
-	OS_ERR err;
+	uint8_t 	d=0;
+	OS_FLAGS  	flags=0;
+	OS_ERR 		err;
 
 	//进入中断
 	OSIntEnter();    
@@ -201,10 +202,13 @@ void USART2_IRQHandler(void)                	//串口2中断服务程序
 	{
 		//接收串口数据
 		d=USART_ReceiveData(USART2);	
-		if(mqtt_connect_flag==0)							//如果Connect_flag等于0，当前还没有连接服务器，处于指令配置状态
+		flags = OSFlagPend(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,0,\
+										OS_OPT_PEND_FLAG_SET_ALL +\
+										OS_OPT_PEND_NON_BLOCKING, NULL, &err);		//OS_OPT_PEND_NON_BLOCKING 不阻塞等待
+		if(!(flags & 0x02))												//如果连接 标志位等于0，当前还没有连接服务器，处于指令配置状态
 		{                                
-			if(d)                                	//处于指令配置状态时，非零值才保存到缓冲区	
-				g_esp8266_rx_buf[g_esp8266_rx_cnt++] = d; //保存到缓冲区	
+			if(d)                                				//处于指令配置状态时，非零值才保存到缓冲区	
+				g_esp8266_rx_buf[g_esp8266_rx_cnt++] = d; 		//保存到缓冲区	
 				
 		}
 		else
@@ -216,7 +220,7 @@ void USART2_IRQHandler(void)                	//串口2中断服务程序
 			else                       					//else分支，表示果g_esp8266_rx_cnt不等于1，不是接收的第一个数据
 				TIM_SetCounter(TIM3,0);  
 				
-		}	g_esp8266_rx_end=1;
+		}
 		
 		
 #if EN_DEBUG_ESP8266		

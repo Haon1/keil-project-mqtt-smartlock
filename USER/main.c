@@ -3,6 +3,7 @@
 #include "usart.h"
 #include "led.h"
 #include "rtc.h"
+#include "tim3.h"
 #include "rgb_led.h"
 #include "esp8266.h"
 #include "esp8266_mqtt.h"
@@ -62,7 +63,6 @@ int main(void)
 	
 	usart_init(115200);  				 									//串口初始化
 
-
 	//OS初始化，它是第一个运行的函数,初始化各种的全局变量，例如中断嵌套计数器、优先级、存储器
 	OSInit(&err);
 
@@ -109,22 +109,41 @@ void task_system_init(void *parg)
 	OS_ERR err;
 	printf("task_system_init is create ok\r\n");
 	
+	//引脚初始化
 	esp8266_init();
+	//连接路由器
 	while(esp8266_connect_ap());
 	
-	if(sync_local_time())
+	//同步系统时间
+	rt = sync_local_time();
+	if(rt == -1)
 	{
 		printf("sync time fail\r\n");
-		esp8266_disconnect_server();  //断开连接，避免占用
 		while(1);
 	}
+	else if(rt == 1)
+	{
+		if(esp8266_exit_transparent_transmission()==0)	//退出透传
+			printf("exit transmission success\r\n");
+		
+		while(esp8266_disconnect_server())				//断开连接，避免占用过久
+			printf("disconnect time server fail\r\n");
+		printf("disconnect time server success\r\n");
+	}
 	printf("sync time success\r\n");
-	esp8266_disconnect_server();	//断开连接，避免占用过久
+	
+	
+	
 	
 	//LED_Init();         												//LED初始化	
 	rgb_led_init();
-	AliIoT_Parameter_Init();
 	
+	tim3_init();
+	
+	AliIoT_Parameter_Init();
+	mqtt_buffer_init();
+	
+	while(esp8266_mqtt_init());
 	
 	//创建互斥锁
 	OSMutexCreate(&g_mutex_printf,	"g_mutex_printf",&err);

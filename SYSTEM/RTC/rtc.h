@@ -3,6 +3,8 @@
 
 #include <time.h>
 
+#define	BACKUP_FLAG	0x70
+
 struct timeinfo		//时间结构体
 {
 	int year;
