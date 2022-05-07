@@ -112,21 +112,14 @@ void task_system_init(void *parg)
 	esp8266_init();
 	while(esp8266_connect_ap());
 	
-//	rt = esp8266_connect_time_server();
-//	if(rt)
-//		while(1);
-//	rt = esp8266_get_network_time();
-//	if(rt)
-//		while(1);
-//	
-//	printf("%s\r\n",g_esp8266_rx_buf);
-//	
-//	time_json_parse(strstr((char *)g_esp8266_rx_buf,"{"));
-//	
-//	
-//	rt = esp8266_disconnect_time_server();
-//	if(rt)
-//		while(1);
+	if(sync_local_time())
+	{
+		printf("sync time fail\r\n");
+		esp8266_disconnect_server();  //断开连接，避免占用
+		while(1);
+	}
+	
+	esp8266_disconnect_server();	//断开连接，避免占用过久
 
 	
 	//如果读寄存器不是 0x80  则获取网络时间 设置  rtc  并写寄存器0x80  
@@ -136,8 +129,6 @@ void task_system_init(void *parg)
 	rgb_led_init();
 	AliIoT_Parameter_Init();
 	
-	//年月日星期时分秒
-	rtc_init(22,5,6,5,0,9,30);		//手动设置时间
 	
 	//创建互斥锁
 	OSMutexCreate(&g_mutex_printf,	"g_mutex_printf",&err);

@@ -1,5 +1,8 @@
 #include <stm32f4xx.h>
 #include "sys.h"
+#include "esp8266.h"
+#include "nettime.h"
+#include "rtc.h"
 #include "includes.h"
 
 volatile uint8_t g_rtc_alarm_A_event = 0;
@@ -14,8 +17,9 @@ static RTC_DateTypeDef  	RTC_DateStructure;
 static RTC_InitTypeDef  	RTC_InitStructure;
 static RTC_AlarmTypeDef 	RTC_AlarmStructure;
 
+
 //设置日期 22 5 6 5 
-void rtc_init(uint8_t year,uint8_t mon,uint8_t day,uint8_t week, uint8_t hour, uint8_t min, uint8_t sec)
+void rtc_init(struct timeinfo t)
 {
 	//打开电源管理时钟
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
@@ -74,10 +78,10 @@ void rtc_init(uint8_t year,uint8_t mon,uint8_t day,uint8_t week, uint8_t hour, u
 //	RTC_DateStructure.RTC_Date = 0x06;
 //	RTC_DateStructure.RTC_WeekDay = RTC_Weekday_Friday;
 //	RTC_SetDate(RTC_Format_BCD, &RTC_DateStructure);
-	RTC_DateStructure.RTC_Year = (year+(year/10)*6);  //21+(21/10)*6->21+12->33->0x21
-	RTC_DateStructure.RTC_Month = (mon+(mon/10)*6);		//5+(5/10)*6->5+0->5->0x05
-	RTC_DateStructure.RTC_Date = (day+(day/10)*6);
-	RTC_DateStructure.RTC_WeekDay = (week+(week/10)*6);
+	RTC_DateStructure.RTC_Year = (t.year+(t.year/10)*6);  //21+(21/10)*6->21+12->33->0x21
+	RTC_DateStructure.RTC_Month = (t.mon+(t.mon/10)*6);		//5+(5/10)*6->5+0->5->0x05
+	RTC_DateStructure.RTC_Date = (t.day+(t.day/10)*6);
+	RTC_DateStructure.RTC_WeekDay = (t.week+(t.week/10)*6);
 	RTC_SetDate(RTC_Format_BCD, &RTC_DateStructure);
 	
 	/* Set the time to 17h 12mn 00s PM */
@@ -86,18 +90,14 @@ void rtc_init(uint8_t year,uint8_t mon,uint8_t day,uint8_t week, uint8_t hour, u
 //	RTC_TimeStructure.RTC_Minutes = 0x02;
 //	RTC_TimeStructure.RTC_Seconds = 0x00;
 //	RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure); 
-	if(hour >= 12)
-	{
+	if(t.hour >= 12)
 		RTC_TimeStructure.RTC_H12     = RTC_H12_PM;
-	}
 	else
-	{
 		RTC_TimeStructure.RTC_H12     = RTC_H12_AM;
-	}
 	
-	RTC_TimeStructure.RTC_Hours   = (hour+(hour/10)*6);
-	RTC_TimeStructure.RTC_Minutes = (min+(min/10)*6);
-	RTC_TimeStructure.RTC_Seconds = (sec+(sec/10)*6);
+	RTC_TimeStructure.RTC_Hours   = (t.hour+(t.hour/10)*6);
+	RTC_TimeStructure.RTC_Minutes = (t.min+(t.min/10)*6);
+	RTC_TimeStructure.RTC_Seconds = (t.sec+(t.sec/10)*6);
 	RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure);
 
 	
@@ -131,9 +131,6 @@ void rtc_init(uint8_t year,uint8_t mon,uint8_t day,uint8_t week, uint8_t hour, u
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x03;		//响应优先级为0x3
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//使能
 	NVIC_Init(&NVIC_InitStructure);	
-	
-	
-	//RTC_WriteBackupRegister(RTC_BKP_DR0, 0x80);	//写入备份寄存器
 }
 
 
@@ -208,18 +205,61 @@ void rtc_set_date(uint8_t year,uint8_t mon,uint8_t day,uint8_t week)
 void rtc_set_time(uint8_t hour, uint8_t min, uint8_t sec)
 {
 	if(hour >= 12)
-	{
-		RTC_TimeStructure.RTC_H12     = RTC_H12_PM;
-	}
+		RTC_TimeStructure.RTC_H12     = RTC_H12_PM;	
 	else
-	{
 		RTC_TimeStructure.RTC_H12     = RTC_H12_AM;
-	}
 	
 	RTC_TimeStructure.RTC_Hours   = (hour+(hour/10)*6);
 	RTC_TimeStructure.RTC_Minutes = (min+(min/10)*6);
 	RTC_TimeStructure.RTC_Seconds = (sec+(sec/10)*6);
 	RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure); 
+}
+
+
+//时间戳转成时间
+void timestamp_to_realtime(time_t *timestamp, struct timeinfo *t)
+{
+	struct tm *p = localtime(timestamp);
+	
+	t->year = p->tm_year;
+	t->mon  = p->tm_mon;
+	t->day  = p->tm_mday;
+	t->week = p->tm_wday;
+	t->hour = p->tm_hour;
+	t->min  = p->tm_min;
+	t->sec  = p->tm_sec;
+}
+
+//同步本地时间
+int32_t sync_local_time(void)
+{
+	struct timeinfo t;		//时间结构体
+	time_t T;				//时间戳
+	
+	
+	if( RTC_ReadBackupRegister(RTC_BKP_DR0) != 0x80 )	//读取备份寄存器
+	{
+		if(esp8266_get_network_time())
+			return -1;
+		
+		//解析回复得到时间搓
+		T = time_json_parse(strstr((char *)g_esp8266_rx_buf,"{"));
+		
+		//时间戳转时间放到  结构体中
+		timestamp_to_realtime(&T,&t);
+		
+		//用结构体初始化rtc
+		rtc_init(t);
+		
+		
+		RTC_WriteBackupRegister(RTC_BKP_DR0, 0x80);	//写入备份寄存器
+	}
+	else
+	{
+		//从备份寄存器恢复时间
+		rtc_init_from_bkp_dr0();
+	}
+	return 0;
 }
 
 //设置闹钟 10-30-20
@@ -229,13 +269,9 @@ void rtc_set_alarm(uint8_t hour, uint8_t min, uint8_t sec)
 	RTC_AlarmCmd(RTC_Alarm_A,DISABLE);
 	
 	if(hour >= 12)
-	{
 		RTC_AlarmStructure.RTC_AlarmTime.RTC_H12  = RTC_H12_PM;
-	}
 	else
-	{
 		RTC_AlarmStructure.RTC_AlarmTime.RTC_H12  = RTC_H12_AM;
-	}
 	
 	RTC_AlarmStructure.RTC_AlarmTime.RTC_Hours   = (hour+(hour/10)*6);
 	RTC_AlarmStructure.RTC_AlarmTime.RTC_Minutes = (min+(min/10)*6);
@@ -258,7 +294,7 @@ void rtc_set_alarm(uint8_t hour, uint8_t min, uint8_t sec)
 
 
 
-
+//闹钟初始化
 void rtc_alarm_init(void)
 {
 	//关闭闹钟A
@@ -303,6 +339,7 @@ void rtc_alarm_init(void)
 }
 
 
+//rtc唤醒中断
 void RTC_WKUP_IRQHandler(void)
 {
 	OS_ERR err;
