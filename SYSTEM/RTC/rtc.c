@@ -221,8 +221,8 @@ void timestamp_to_realtime(time_t *timestamp, struct timeinfo *t)
 {
 	struct tm *p = localtime(timestamp);
 	
-	t->year = p->tm_year;
-	t->mon  = p->tm_mon;
+	t->year = p->tm_year-100;
+	t->mon  = p->tm_mon+1;
 	t->day  = p->tm_mday;
 	t->week = p->tm_wday;
 	t->hour = p->tm_hour;
@@ -239,6 +239,7 @@ int32_t sync_local_time(void)
 	
 	if( RTC_ReadBackupRegister(RTC_BKP_DR0) != 0x80 )	//读取备份寄存器
 	{
+		printf("sync time from network\r\n");
 		if(esp8266_get_network_time())
 			return -1;
 		
@@ -256,6 +257,7 @@ int32_t sync_local_time(void)
 	}
 	else
 	{
+		printf("sync time from back dr0\r\n");
 		//从备份寄存器恢复时间
 		rtc_init_from_bkp_dr0();
 	}

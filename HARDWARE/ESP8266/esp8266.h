@@ -2,7 +2,7 @@
 #define __ESP8266_H__
 
 
-#define EN_DEBUG_ESP8266	1
+#define EN_DEBUG_ESP8266	0
 //添加WIFI热点宏定义，此处根据自己的wifi作调整
 
 #define WIFI_SSID 			"HiXyan"

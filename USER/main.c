@@ -118,12 +118,8 @@ void task_system_init(void *parg)
 		esp8266_disconnect_server();  //断开连接，避免占用
 		while(1);
 	}
-	
+	printf("sync time success\r\n");
 	esp8266_disconnect_server();	//断开连接，避免占用过久
-
-	
-	//如果读寄存器不是 0x80  则获取网络时间 设置  rtc  并写寄存器0x80  
-	//如果是 0x80   则  从备份寄存器初始化rtc   
 	
 	//LED_Init();         												//LED初始化	
 	rgb_led_init();
