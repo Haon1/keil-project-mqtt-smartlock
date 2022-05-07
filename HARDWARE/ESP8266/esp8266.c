@@ -194,7 +194,9 @@ int32_t esp8266_connect_ap(void)
 		return -4;
 	}	
 	printf("esp8266_connect_ap success\r\n");
+	
 	delay_ms(2000);
+	return 0;
 }
 
 

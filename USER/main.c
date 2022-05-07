@@ -110,10 +110,7 @@ void task_system_init(void *parg)
 	printf("task_system_init is create ok\r\n");
 	
 	esp8266_init();
-	while(esp8266_connect_ap())
-	{
-		printf("esp8266 init fail\r\n");
-	}
+	while(esp8266_connect_ap());
 	
 //	rt = esp8266_connect_time_server();
 //	if(rt)
