@@ -28,7 +28,7 @@ void rtc_init(struct timeinfo t)
 	PWR_BackupAccessCmd(ENABLE);
 	
 	
-#if 0
+#if 1
 	/* 使能LSE*/
 	RCC_LSEConfig(RCC_LSE_ON);
 	
@@ -66,11 +66,20 @@ void rtc_init(struct timeinfo t)
 					= 32768Hz /32768
 	                =1Hz
 	*/
-	RTC_InitStructure.RTC_AsynchPrediv = 0x7F;
-	RTC_InitStructure.RTC_SynchPrediv = 0xFF;
-	RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;//24小时格式
+#if 1 //LSE
+	/* Configure the RTC data register and RTC prescaler，配置RTC数据寄存器与RTC的分频值 */
+	RTC_InitStructure.RTC_AsynchPrediv = 0x7F;				//异步分频系数
+	RTC_InitStructure.RTC_SynchPrediv = 0xFF;				//同步分频系数
+	RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;	//24小时格式
 	RTC_Init(&RTC_InitStructure);
-	
+#else //LSI
+	/* Configure the RTC data register and RTC prescaler，配置RTC数据寄存器与RTC的分频值 */
+	RTC_InitStructure.RTC_AsynchPrediv = 0x7F;				//异步分频系数
+	RTC_InitStructure.RTC_SynchPrediv = 0xF9;				//同步分频系数
+	RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;	//24小时格式
+	RTC_Init(&RTC_InitStructure);
+#endif
+
 	
 	/* Set the date: Friday May 21th 2021 */
 //	RTC_DateStructure.RTC_Year = 0x22;
@@ -225,6 +234,7 @@ void timestamp_to_realtime(time_t *timestamp, struct timeinfo *t)
 	t->mon  = p->tm_mon+1;
 	t->day  = p->tm_mday;
 	t->week = p->tm_wday;
+	if(t->week==0)	t->week = 7;
 	t->hour = p->tm_hour;
 	t->min  = p->tm_min;
 	t->sec  = p->tm_sec;

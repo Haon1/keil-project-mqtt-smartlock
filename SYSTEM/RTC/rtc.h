@@ -3,7 +3,7 @@
 
 #include <time.h>
 
-#define	BACKUP_FLAG	0x70
+#define	BACKUP_FLAG	0x80
 
 struct timeinfo		//时间结构体
 {
