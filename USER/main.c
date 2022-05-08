@@ -146,7 +146,7 @@ void task_system_init(void *parg)
 	AliIoT_Parameter_Init();
 	mqtt_buffer_init();
 	
-	while(esp8266_mqtt_init());
+	//while(esp8266_mqtt_init());
 	
 	//´´½¨»¥³âËø
 	OSMutexCreate(&g_mutex_printf,	"g_mutex_printf",&err);

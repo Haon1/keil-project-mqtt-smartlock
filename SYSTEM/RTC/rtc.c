@@ -18,7 +18,7 @@ static RTC_InitTypeDef  	RTC_InitStructure;
 static RTC_AlarmTypeDef 	RTC_AlarmStructure;
 
 
-//设置日期 22 5 6 5 
+//设置日期 
 void rtc_init(struct timeinfo t)
 {
 	//打开电源管理时钟
@@ -28,7 +28,7 @@ void rtc_init(struct timeinfo t)
 	PWR_BackupAccessCmd(ENABLE);
 	
 	
-#if 1
+#if CLK_LSE
 	/* 使能LSE*/
 	RCC_LSEConfig(RCC_LSE_ON);
 	
@@ -66,7 +66,7 @@ void rtc_init(struct timeinfo t)
 					= 32768Hz /32768
 	                =1Hz
 	*/
-#if 1 //LSE
+#if CLK_LSE //LSE
 	/* Configure the RTC data register and RTC prescaler，配置RTC数据寄存器与RTC的分频值 */
 	RTC_InitStructure.RTC_AsynchPrediv = 0x7F;				//异步分频系数
 	RTC_InitStructure.RTC_SynchPrediv = 0xFF;				//同步分频系数
@@ -151,15 +151,25 @@ void rtc_init_from_bkp_dr0(void)
 
 	//允许访问备份寄存器，就是对备份寄存器电路供电
 	PWR_BackupAccessCmd(ENABLE);
+#if	CLK_LSE
+	/* 使能LSE*/
+	RCC_LSEConfig(RCC_LSE_ON);
+#else
 	/* 使能LSI*/
 	RCC_LSICmd(ENABLE);
+#endif
 	
-	/* 检查该LSI是否有效*/  
+	/* 检查该时钟源是否有效*/  
 	while(RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET);
+	printf("rcc is ready\r\n");
 
-	/* 选择LSI作为RTC的硬件时钟源*/
+#if	CLK_LSE
+	/* 选择LSE作为RTC的硬件时钟源*/
+	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);	
+#else
+	/* 选择LSE作为RTC的硬件时钟源*/
 	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);	
-	
+#endif
 	
 	/* Enable the RTC Clock，使能RTC时钟 */
 	RCC_RTCCLKCmd(ENABLE);

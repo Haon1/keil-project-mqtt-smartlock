@@ -4,6 +4,7 @@
 #include <time.h>
 
 #define	BACKUP_FLAG	0x80
+#define	CLK_LSE		0		//时钟源LSE  0为LSI   LSE可能无法使用
 
 struct timeinfo		//时间结构体
 {
