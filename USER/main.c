@@ -2,6 +2,7 @@
 #include "delay.h"
 #include "usart.h"
 #include "led.h"
+#include "beep.h"
 #include "rtc.h"
 #include "tim3.h"
 #include "rgb_led.h"
@@ -116,12 +117,12 @@ void task_system_init(void *parg)
 	
 	//同步系统时间
 	rt = sync_local_time();
-	if(rt == -1)
+	if(rt == -1)			//网络同步失败
 	{
 		printf("sync time fail\r\n");
 		while(1);
 	}
-	else if(rt == 1)
+	else if(rt == 1)		//网络同步
 	{
 		if(esp8266_exit_transparent_transmission()==0)	//退出透传
 			printf("exit transmission success\r\n");
@@ -135,7 +136,9 @@ void task_system_init(void *parg)
 	
 	
 	
-	//LED_Init();         												//LED初始化	
+	//LED_Init();
+         												//LED初始化	
+	beep_init();
 	rgb_led_init();
 	
 	tim3_init();
