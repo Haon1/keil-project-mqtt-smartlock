@@ -3,6 +3,7 @@
 #include "esp8266.h"
 #include "nettime.h"
 #include "rtc.h"
+#include "delay.h"
 #include "includes.h"
 
 volatile uint8_t g_rtc_alarm_A_event = 0;
@@ -21,36 +22,32 @@ static RTC_AlarmTypeDef 	RTC_AlarmStructure;
 //设置日期 
 void rtc_init(struct timeinfo t)
 {
+	u8 i=0;
 	//打开电源管理时钟
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
 
 	//允许访问备份寄存器，就是对备份寄存器电路供电
 	PWR_BackupAccessCmd(ENABLE);
 	
-	
-#if CLK_LSE
 	/* 使能LSE*/
-	RCC_LSEConfig(RCC_LSE_ON);
-	
-	/* 检查该LSE是否有效*/  
-	while(RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET);
-
-	/* 选择LSE作为RTC的硬件时钟源*/
-	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
-	
-
-#else  //若LSE无法工作，可用内部LSI
-	/* 使能LSI*/
-	RCC_LSICmd(ENABLE);
-	
-	/* 检查该LSI是否有效*/  
-	while(RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET);
-
-	/* 选择LSI作为RTC的硬件时钟源*/
-	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
-	
-
-#endif
+	RCC_LSEConfig(RCC_LSE_ON);			//32.768khz
+	/*等待外部晶振输出稳定*/
+	for(i=0;i<10;i++)
+	{
+		if(RCC_GetFlagStatus(RCC_FLAG_LSERDY) != RESET)
+			break;
+		delay_ms(2);		//延时两毫秒
+	}
+	if(i==10)		//i等于10,说明LSE不起振 ，改用HSE
+	{
+		//使用外部高速晶振 20分频  
+        RCC_RTCCLKConfig(RCC_RTCCLKSource_HSE_Div20); 
+	}
+	else
+	{
+		/*使用外部32.768KHz晶振作为RTC时钟 */                           
+        RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
+	}
 	
 	
 	/* Enable the RTC Clock，使能RTC时钟 */
@@ -59,46 +56,39 @@ void rtc_init(struct timeinfo t)
 	/* Wait for RTC APB registers synchronisation，等待RTC相关寄存器就绪，因为RTC才供电不久 */
 	RTC_WaitForSynchro();
 	
-
-	//配置分频值
+	
+	//配置分频值  要为1Hz
 	/* ck_spre(1Hz) = RTCCLK(LSE) /((uwAsynchPrediv + 1)*(uwSynchPrediv + 1))
 					= 32768Hz / ((0x7F+1)*(0xFF+1))
 					= 32768Hz /32768
-	                =1Hz
-	*/
-#if CLK_LSE //LSE
-	/* Configure the RTC data register and RTC prescaler，配置RTC数据寄存器与RTC的分频值 */
-	RTC_InitStructure.RTC_AsynchPrediv = 0x7F;				//异步分频系数
-	RTC_InitStructure.RTC_SynchPrediv = 0xFF;				//同步分频系数
-	RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;	//24小时格式
-	RTC_Init(&RTC_InitStructure);
-#else //LSI
-	/* Configure the RTC data register and RTC prescaler，配置RTC数据寄存器与RTC的分频值 */
-	RTC_InitStructure.RTC_AsynchPrediv = 0x7F;				//异步分频系数
-	RTC_InitStructure.RTC_SynchPrediv = 0xF9;				//同步分频系数
-	RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;	//24小时格式
-	RTC_Init(&RTC_InitStructure);
-#endif
-
+	                =1Hz */
+	if(i==10)
+	{
+		//  8000000/20 = 400000   400000/((0x27+1)*(0x270F+1)) = 1Hz
+		RTC_InitStructure.RTC_AsynchPrediv = 0x27;				//异步分频系数
+		RTC_InitStructure.RTC_SynchPrediv = 0x270F;				//同步分频系数
+		RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;	//24小时格式
+		RTC_Init(&RTC_InitStructure);
+	}
+	else
+	{
+		//32768hz
+		/* Configure the RTC data register and RTC prescaler，配置RTC数据寄存器与RTC的分频值 */
+		RTC_InitStructure.RTC_AsynchPrediv = 0x7F;				//异步分频系数
+		RTC_InitStructure.RTC_SynchPrediv = 0xFF;				//同步分频系数
+		RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;	//24小时格式
+		RTC_Init(&RTC_InitStructure);
+	}
 	
-	/* Set the date: Friday May 21th 2021 */
-//	RTC_DateStructure.RTC_Year = 0x22;
-//	RTC_DateStructure.RTC_Month = RTC_Month_May;
-//	RTC_DateStructure.RTC_Date = 0x06;
-//	RTC_DateStructure.RTC_WeekDay = RTC_Weekday_Friday;
-//	RTC_SetDate(RTC_Format_BCD, &RTC_DateStructure);
+
+	//设置日期
 	RTC_DateStructure.RTC_Year = (t.year+(t.year/10)*6);  //21+(21/10)*6->21+12->33->0x21
 	RTC_DateStructure.RTC_Month = (t.mon+(t.mon/10)*6);		//5+(5/10)*6->5+0->5->0x05
 	RTC_DateStructure.RTC_Date = (t.day+(t.day/10)*6);
 	RTC_DateStructure.RTC_WeekDay = (t.week+(t.week/10)*6);
 	RTC_SetDate(RTC_Format_BCD, &RTC_DateStructure);
 	
-	/* Set the time to 17h 12mn 00s PM */
-//	RTC_TimeStructure.RTC_H12     = RTC_H12_PM;
-//	RTC_TimeStructure.RTC_Hours   = 0x00;
-//	RTC_TimeStructure.RTC_Minutes = 0x02;
-//	RTC_TimeStructure.RTC_Seconds = 0x00;
-//	RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure); 
+	//设置时间
 	if(t.hour >= 12)
 		RTC_TimeStructure.RTC_H12     = RTC_H12_PM;
 	else
@@ -146,30 +136,32 @@ void rtc_init(struct timeinfo t)
 //从备份寄存器中恢复时间
 void rtc_init_from_bkp_dr0(void)
 {
+	u8 i=0;
 	//打开电源管理时钟
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
 
 	//允许访问备份寄存器，就是对备份寄存器电路供电
 	PWR_BackupAccessCmd(ENABLE);
-#if	CLK_LSE
-	/* 使能LSE*/
-	RCC_LSEConfig(RCC_LSE_ON);
-#else
-	/* 使能LSI*/
-	RCC_LSICmd(ENABLE);
-#endif
 	
-	/* 检查该时钟源是否有效*/  
-	while(RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET);
-	printf("rcc is ready\r\n");
-
-#if	CLK_LSE
-	/* 选择LSE作为RTC的硬件时钟源*/
-	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);	
-#else
-	/* 选择LSE作为RTC的硬件时钟源*/
-	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);	
-#endif
+	/* 使能LSE*/
+	RCC_LSEConfig(RCC_LSE_ON);			//32.768khz
+	/*等待外部晶振输出稳定*/
+	for(i=0;i<10;i++)
+	{
+		if(RCC_GetFlagStatus(RCC_FLAG_LSERDY) != RESET)
+			break;
+		delay_ms(2);		//延时两毫秒
+	}
+	if(i==10)		//i等于10,说明LSE不起振 ，改用HSE
+	{
+		//使用外部高速晶振 20分频  
+        RCC_RTCCLKConfig(RCC_RTCCLKSource_HSE_Div20); 
+	}
+	else
+	{
+		/*使用外部32.768KHz晶振作为RTC时钟 */                           
+        RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
+	}
 	
 	/* Enable the RTC Clock，使能RTC时钟 */
 	RCC_RTCCLKCmd(ENABLE);

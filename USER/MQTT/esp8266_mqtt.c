@@ -405,7 +405,6 @@ uint32_t mqtt_publish_data(char *topic, char *message, uint8_t qos)
     uint32_t messageLength = strlen(message);
 
     uint32_t data_len;
-	uint8_t encodedByte;
 
     g_mqtt_tx_len=0;
     //有效载荷的长度这样计算：用固定报头中的剩余长度字段的值减去可变报头的长度
