@@ -25,20 +25,20 @@ char MQTT_PASSWD[128]; 				//密码
 int  PASSWD_LEN;
 
 
-unsigned char  MQTT_RxDataBuf[R_NUM][BUFF_UNIT];            //数据的接收缓冲区,所有服务器发来的数据，存放在该缓冲区,缓冲区第一个字节存放数据长度
-unsigned char *MQTT_RxDataInPtr;                            //指向接收缓冲区存放数据的位置
-unsigned char *MQTT_RxDataOutPtr;                           //指向接收缓冲区读取数据的位置
-unsigned char *MQTT_RxDataEndPtr;                           //指向接收缓冲区结束的位置
+unsigned char  mqtt_rx_buf[R_NUM][BUFF_UNIT];            //数据的接收缓冲区,所有服务器发来的数据，存放在该缓冲区,缓冲区第一个字节存放数据长度
+unsigned char *mqtt_rx_inptr;                            //指向接收缓冲区存放数据的位置
+unsigned char *mqtt_rx_outptr;                           //指向接收缓冲区读取数据的位置
+unsigned char *mqtt_rx_endptr;                           //指向接收缓冲区结束的位置
 
-unsigned char  MQTT_TxDataBuf[T_NUM][BUFF_UNIT];            //数据的发送缓冲区,所有发往服务器的数据，存放在该缓冲区,缓冲区第一个字节存放数据长度
-unsigned char *MQTT_TxDataInPtr;                            //指向发送缓冲区存放数据的位置
-unsigned char *MQTT_TxDataOutPtr;                           //指向发送缓冲区读取数据的位置
-unsigned char *MQTT_TxDataEndPtr;                           //指向发送缓冲区结束的位置
+unsigned char  mqtt_tx_buf[T_NUM][BUFF_UNIT];            //数据的发送缓冲区,所有发往服务器的数据，存放在该缓冲区,缓冲区第一个字节存放数据长度
+unsigned char *mqtt_tx_inptr;                            //指向发送缓冲区存放数据的位置
+unsigned char *mqtt_tx_outptr;                           //指向发送缓冲区读取数据的位置
+unsigned char *mqtt_tx_endptr;                           //指向发送缓冲区结束的位置
 
-unsigned char  MQTT_CMDBuf[C_NUM][BUFF_UNIT];               //命令数据的接收缓冲区
-unsigned char *MQTT_CMDInPtr;                               //指向命令缓冲区存放数据的位置
-unsigned char *MQTT_CMDOutPtr;                              //指向命令缓冲区读取数据的位置
-unsigned char *MQTT_CMDEndPtr;                              //指向命令缓冲区结束的位置
+unsigned char  mqtt_cmd_buf[C_NUM][BUFF_UNIT];               //命令数据的接收缓冲区
+unsigned char *mqtt_cmd_inptr;                               //指向命令缓冲区存放数据的位置
+unsigned char *mqtt_cmd_outptr;                              //指向命令缓冲区读取数据的位置
+unsigned char *mqtt_cmd_endptr;                              //指向命令缓冲区结束的位置
 
 
 
@@ -79,17 +79,17 @@ void AliIoT_Parameter_Init(void)
 //缓冲区初始化
 void mqtt_buffer_init(void)
 {
-	MQTT_RxDataInPtr=MQTT_RxDataBuf[0];               //指向发送缓冲区存放数据的指针归位
-	MQTT_RxDataOutPtr=MQTT_RxDataInPtr;               //指向发送缓冲区读取数据的指针归位
-    MQTT_RxDataEndPtr=MQTT_RxDataBuf[R_NUM-1];        //指向发送缓冲区结束的指针归位
+	mqtt_rx_inptr  = mqtt_rx_buf[0];               //指向接收缓冲区存放数据的指针归位
+	mqtt_rx_outptr = mqtt_rx_inptr;               //指向接收缓冲区读取数据的指针归位
+    mqtt_rx_endptr = mqtt_rx_buf[R_NUM-1];        //指向接收缓冲区结束的指针归位
 	
-	MQTT_TxDataInPtr=MQTT_TxDataBuf[0];               //指向发送缓冲区存放数据的指针归位
-	MQTT_TxDataOutPtr=MQTT_TxDataInPtr;               //指向发送缓冲区读取数据的指针归位
-	MQTT_TxDataEndPtr=MQTT_TxDataBuf[T_NUM-1];        //指向发送缓冲区结束的指针归位
+	mqtt_tx_inptr  = mqtt_tx_buf[0];               //指向发送缓冲区存放数据的指针归位
+	mqtt_tx_outptr = mqtt_tx_inptr;               //指向发送缓冲区读取数据的指针归位
+    mqtt_tx_endptr = mqtt_tx_buf[R_NUM-1];        //指向发送缓冲区结束的指针归位
 	
-	MQTT_CMDInPtr=MQTT_CMDBuf[0];                     //指向命令缓冲区存放数据的指针归位
-	MQTT_CMDOutPtr=MQTT_CMDInPtr;                     //指向命令缓冲区读取数据的指针归位
-	MQTT_CMDEndPtr=MQTT_CMDBuf[C_NUM-1];              //指向命令缓冲区结束的指针归位
+	mqtt_cmd_inptr  = mqtt_cmd_buf[0];               //指向命令缓冲区存放数据的指针归位
+	mqtt_cmd_outptr = mqtt_cmd_inptr;               //指向命令缓冲区读取数据的指针归位
+    mqtt_cmd_endptr = mqtt_cmd_buf[R_NUM-1];        //指向命令缓冲区结束的指针归位
 }
 
 
@@ -99,14 +99,14 @@ void mqtt_buffer_init(void)
 /*参  数：size：数据长度                                    */
 /*返回值：无                                                */
 /*----------------------------------------------------------*/
-void TxDataBuf_Deal(unsigned char *data, int size)
+void mqtt_tx_buf_deal(unsigned char *data, int size)
 {
-	memcpy(&MQTT_TxDataInPtr[2],data,size);      //拷贝数据到发送缓冲区	
-	MQTT_TxDataInPtr[0] = BYTE1(size);              //记录数据长度
-	MQTT_TxDataInPtr[1] = BYTE0(size);              //记录数据长度
-	MQTT_TxDataInPtr+=BUFF_UNIT;                 //指针下移
-	if(MQTT_TxDataInPtr==MQTT_TxDataEndPtr)      //如果指针到缓冲区尾部了
-		MQTT_TxDataInPtr = MQTT_TxDataBuf[0];    //指针归位到缓冲区开头
+	memcpy(&mqtt_tx_inptr[2],data,size);      	//拷贝数据到发送缓冲区	
+	mqtt_tx_inptr[0] = BYTE1(size);              //记录数据长度
+	mqtt_tx_inptr[1] = BYTE0(size);              //记录数据长度
+	mqtt_tx_inptr+=BUFF_UNIT;                 	//指针下移
+	if(mqtt_tx_inptr==mqtt_tx_endptr)      		//如果指针到缓冲区尾部了
+		mqtt_tx_inptr = mqtt_tx_buf[0];    		//指针归位到缓冲区开头
 }
 
 /*----------------------------------------------------------*/
@@ -115,14 +115,14 @@ void TxDataBuf_Deal(unsigned char *data, int size)
 /*参  数：size：数据长度                                    */
 /*返回值：无                                                */
 /*----------------------------------------------------------*/
-void RxDataBuf_Deal(unsigned char *data, int size)
+void mqtt_rx_buf_deal(unsigned char *data, int size)
 {
-	memcpy(&MQTT_RxDataInPtr[2],data,size);      //拷贝数据到发送缓冲区	
-	MQTT_RxDataInPtr[0] = BYTE1(size);              //记录数据长度
-	MQTT_RxDataInPtr[1] = BYTE0(size);              //记录数据长度
-	MQTT_RxDataInPtr+=BUFF_UNIT;                 //指针下移
-	if(MQTT_RxDataInPtr==MQTT_RxDataEndPtr)      //如果指针到缓冲区尾部了
-		MQTT_RxDataInPtr = MQTT_RxDataBuf[0];    //指针归位到缓冲区开头
+	memcpy(&mqtt_rx_inptr[2],data,size);      	//拷贝数据到接收缓冲区	
+	mqtt_rx_inptr[0] = BYTE1(size);              //记录数据长度
+	mqtt_rx_inptr[1] = BYTE0(size);              //记录数据长度
+	mqtt_rx_inptr+=BUFF_UNIT;                 	//指针下移
+	if(mqtt_rx_inptr==mqtt_rx_endptr)      		//如果指针到缓冲区尾部了
+		mqtt_rx_inptr = mqtt_rx_buf[0];    		//指针归位到缓冲区开头
 }
 
 //MQTT发送数据

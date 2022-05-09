@@ -41,7 +41,7 @@ void TIM3_IRQHandler(void)
 	
 	if(TIM_GetITStatus(TIM3, TIM_IT_Update)==SET)
 	{
-		RxDataBuf_Deal(g_esp8266_rx_buf, g_esp8266_rx_cnt);
+		mqtt_rx_buf_deal(g_esp8266_rx_buf, g_esp8266_rx_cnt);
 		
 		memset((char *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
 		g_esp8266_rx_cnt = 0;
