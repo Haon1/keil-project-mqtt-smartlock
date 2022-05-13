@@ -202,6 +202,35 @@ int mqtt_packet_encode(unsigned char *buf, int length)
     return bytes;
 }
 
+/**
+ * @brief 剩余长度转换为十进制数
+ * @param buf 剩余长度地址
+ * @param length 转成十进制数存放
+ * return int 剩余长度所占字节数
+ */
+int mqtt_packet_decrypt_encode(const unsigned char *buf, int *length)
+{
+	int bytes = 0;
+	char ch, tmp;
+	*length = 0;
+
+	do
+	{
+		tmp = ch = buf[bytes];
+		if(tmp & 0x80)
+		{
+			tmp ^= 0x80;
+		}
+		*p += tmp * pow(128,bytes);
+		bytes++;
+	}while(ch & 0x80)
+	//处理最高位
+	*p += buf[bytes] * pow(128,bytes);
+	bytes++;
+
+	return bytes;
+}
+
 //MQTT连接服务器的打包函数
 int32_t mqtt_connect_packet(void)
 {

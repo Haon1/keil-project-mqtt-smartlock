@@ -69,6 +69,8 @@ void mqtt_rx_buf_deal(unsigned char *data, int size);
 
 //计算剩余长度,返回所用字节数
 int mqtt_packet_encode(unsigned char *buf, int length);
+//剩余长度解析,返回所用字节数,转成十进制数存放到length中
+int mqtt_packet_decrypt_encode(const unsigned char *buf, int *length);
 
 //MQTT连接服务器
 int32_t mqtt_connect_packet(void);
