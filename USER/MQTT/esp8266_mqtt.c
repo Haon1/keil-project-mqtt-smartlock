@@ -221,11 +221,11 @@ int mqtt_packet_decrypt_encode(const unsigned char *buf, int *length)
 		{
 			tmp ^= 0x80;
 		}
-		*p += tmp * pow(128,bytes);
+		*length += tmp * pow(128,bytes);
 		bytes++;
-	}while(ch & 0x80)
+	}while(ch & 0x80);
 	//处理最高位
-	*p += buf[bytes] * pow(128,bytes);
+	*length += buf[bytes] * pow(128,bytes);
 	bytes++;
 
 	return bytes;
