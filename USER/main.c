@@ -10,32 +10,32 @@
 #include "esp8266_mqtt.h"
 #include "includes.h"
 
-//ÈÎÎñ1¿ØÖÆ¿é
 OS_TCB TASK_SYSTEM_INIT_TCB;
 void task_system_init(void *parg);
-CPU_STK task_system_init_stk[512];			//ÈÎÎñ¶ÑÕ»£¬´óĞ¡Îª512×Ö£¬Ò²¾ÍÊÇ2048×Ö½Ú
+CPU_STK task_system_init_stk[512];	
 
 
-//ÈÎÎñLED¿ØÖÆ¿é
 OS_TCB TASK_RGB_LED_TCB;
 void task_rgb_led(void *parg);
-CPU_STK task_rgb_led_stk[512];			//ÈÎÎñµÄÈÎÎñ¶ÑÕ»£¬´óĞ¡Îª512×Ö£¬Ò²¾ÍÊÇ2048×Ö½Ú
+CPU_STK task_rgb_led_stk[512];		
 
-//ÈÎÎñRTC¿ØÖÆ¿é
 OS_TCB TASK_RTC_TCB;
 void task_rtc(void *parg);
-CPU_STK task_rtc_stk[512];			//ÈÎÎñµÄÈÎÎñ¶ÑÕ»£¬´óĞ¡Îª512×Ö£¬Ò²¾ÍÊÇ2048×Ö½Ú
+CPU_STK task_rtc_stk[512];	
 
-
-//ÈÎÎñRTC¿ØÖÆ¿é
 OS_TCB TASK_MQTT_CONNECT_TCB;
 void task_mqtt_connect(void *parg);
-CPU_STK task_mqtt_connect_stk[512];			//ÈÎÎñµÄÈÎÎñ¶ÑÕ»£¬´óĞ¡Îª512×Ö£¬Ò²¾ÍÊÇ2048×Ö½Ú
+CPU_STK task_mqtt_connect_stk[512];			
+
+
+OS_TCB TASK_RX_BUF_DEAL_TCB;
+void task_rx_buf_deal(void *parg);
+CPU_STK task_rx_buf_deal_stk[128];			
 
 
 
-OS_MUTEX				g_mutex_printf;			//»¥³âËøµÄ¶ÔÏó
-OS_FLAG_GRP   			g_flag_grp;				//ÊÂ¼ş±êÖ¾×é	
+OS_MUTEX				g_mutex_printf;		
+OS_FLAG_GRP   			g_flag_grp;			
 
 
 #define DEBUG_PRINTF_EN	1
@@ -58,35 +58,31 @@ void dgb_printf_safe(const char *format, ...)
 }
 
 
-//Ö÷º¯Êı
 int main(void)
 {
 	OS_ERR err;
 
-	systick_init();  													//Ê±ÖÓ³õÊ¼»¯
+	systick_init();  													
 	
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);						//ÖĞ¶Ï·Ö×éÅäÖÃ
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);						
 	
-	usart_init(115200);  				 									//´®¿Ú³õÊ¼»¯
+	usart_init(115200);  				 								
 
-	//OS³õÊ¼»¯£¬ËüÊÇµÚÒ»¸öÔËĞĞµÄº¯Êı,³õÊ¼»¯¸÷ÖÖµÄÈ«¾Ö±äÁ¿£¬ÀıÈçÖĞ¶ÏÇ¶Ì×¼ÆÊıÆ÷¡¢ÓÅÏÈ¼¶¡¢´æ´¢Æ÷
 	OSInit(&err);
 
-
-	//´´½¨ÈÎÎñ1
-	OSTaskCreate(	(OS_TCB *)&TASK_SYSTEM_INIT_TCB,									//ÈÎÎñ¿ØÖÆ¿é£¬µÈÍ¬ÓÚÏß³Ìid
-					(CPU_CHAR *)"task_system_init",									//ÈÎÎñµÄÃû×Ö£¬Ãû×Ö¿ÉÒÔ×Ô¶¨ÒåµÄ
-					(OS_TASK_PTR)task_system_init,										//ÈÎÎñº¯Êı£¬µÈÍ¬ÓÚÏß³Ìº¯Êı
-					(void *)0,												//´«µİ²ÎÊı£¬µÈÍ¬ÓÚÏß³ÌµÄ´«µİ²ÎÊı
-					(OS_PRIO)6,											 	//ÈÎÎñµÄÓÅÏÈ¼¶6		
-					(CPU_STK *)task_system_init_stk,									//ÈÎÎñ¶ÑÕ»»ùµØÖ·
-					(CPU_STK_SIZE)512/10,									//ÈÎÎñ¶ÑÕ»Éî¶ÈÏŞÎ»£¬ÓÃµ½Õâ¸öÎ»ÖÃ£¬ÈÎÎñ²»ÄÜÔÙ¼ÌĞøÊ¹ÓÃ
-					(CPU_STK_SIZE)512,										//ÈÎÎñ¶ÑÕ»´óĞ¡			
-					(OS_MSG_QTY)0,											//½ûÖ¹ÈÎÎñÏûÏ¢¶ÓÁĞ
-					(OS_TICK)0,												//Ä¬ÈÏÊ±¼äÆ¬³¤¶È																
-					(void  *)0,												//²»ĞèÒª²¹³äÓÃ»§´æ´¢Çø
-					(OS_OPT)OS_OPT_TASK_NONE,								//Ã»ÓĞÈÎºÎÑ¡Ïî
-					&err													//·µ»ØµÄ´íÎóÂë
+	OSTaskCreate(	(OS_TCB *)&TASK_SYSTEM_INIT_TCB,
+					(CPU_CHAR *)"task_system_init",	
+					(OS_TASK_PTR)task_system_init,	
+					(void *)0,						
+					(OS_PRIO)6,						
+					(CPU_STK *)task_system_init_stk,
+					(CPU_STK_SIZE)512/10,			
+					(CPU_STK_SIZE)512,				
+					(OS_MSG_QTY)0,					
+					(OS_TICK)0,						
+					(void  *)0,						
+					(OS_OPT)OS_OPT_TASK_NONE,		
+					&err												
 				);
 					
 	if(err!=OS_ERR_NONE)
@@ -99,7 +95,7 @@ int main(void)
 
 					
 
-	//Æô¶¯OS£¬½øĞĞÈÎÎñµ÷¶È
+	//å¯åŠ¨ç³»ç»Ÿè°ƒåº¦
 	OSStart(&err);
 							
 	printf(".......\r\n");
@@ -108,31 +104,32 @@ int main(void)
 	
 }
 
-//ÏµÍ³³õÊ¼»¯ÈÎÎñ
+
 void task_system_init(void *parg)
 {
 	int32_t rt;
 	OS_ERR err;
 	printf("task_system_init is create ok\r\n");
 	
-	//Òı½Å³õÊ¼»¯
+	//8266å¼•è„šåˆå§‹åŒ–
 	esp8266_init();
-	//Á¬½ÓÂ·ÓÉÆ÷
+
+	//è¿æ¥è·¯ç”±å™¨
 	while(esp8266_connect_ap());
 	
-	//Í¬²½ÏµÍ³Ê±¼ä
+	//åŒæ­¥æœ¬åœ°æ—¶é—´
 	rt = sync_local_time();
-	if(rt == -1)			//ÍøÂçÍ¬²½Ê§°Ü
+	if(rt == -1)			
 	{
 		printf("sync time fail\r\n");
 		while(1);
 	}
-	else if(rt == 1)		//ÍøÂçÍ¬²½
+	else if(rt == 1)		
 	{
-		if(esp8266_exit_transparent_transmission()==0)	//ÍË³öÍ¸´«
+		if(esp8266_exit_transparent_transmission()==0)	
 			printf("exit transmission success\r\n");
 		
-		while(esp8266_disconnect_server())				//¶Ï¿ªÁ¬½Ó£¬±ÜÃâÕ¼ÓÃ¹ı¾Ã
+		while(esp8266_disconnect_server())				
 			printf("disconnect time server fail\r\n");
 		printf("disconnect time server success\r\n");
 	}
@@ -142,86 +139,100 @@ void task_system_init(void *parg)
 	
 	
 	//LED_Init();
-         												//LED³õÊ¼»¯	
+         											
 	beep_init();
 	rgb_led_init();
 	
 	tim3_init();
 	
-	//´´½¨»¥³âËø
+	//åˆ›å»ºäº’æ–¥é”
 	OSMutexCreate(&g_mutex_printf,	"g_mutex_printf",&err);
 	
-	//´´½¨ÊÂ¼ş±êÖ¾×é
+	//åˆ›å»ºäº‹ä»¶æ ‡å¿—ç»„
 	OSFlagCreate(&g_flag_grp,"g_flag_grp",0,&err);
 	
 	
-	//´´½¨ÈÎÎñ
-	OSTaskCreate(	(OS_TCB *)&TASK_RGB_LED_TCB,									//ÈÎÎñ¿ØÖÆ¿é
-					(CPU_CHAR *)"task_rgb_led",									//ÈÎÎñµÄÃû×Ö
-					(OS_TASK_PTR)task_rgb_led,										//ÈÎÎñº¯Êı
-					(void *)0,												//´«µİ²ÎÊı
-					(OS_PRIO)7,											 	//ÈÎÎñµÄÓÅÏÈ¼¶7		
-					(CPU_STK *)task_rgb_led_stk,									//ÈÎÎñ¶ÑÕ»»ùµØÖ·
-					(CPU_STK_SIZE)512/10,									//ÈÎÎñ¶ÑÕ»Éî¶ÈÏŞÎ»£¬ÓÃµ½Õâ¸öÎ»ÖÃ£¬ÈÎÎñ²»ÄÜÔÙ¼ÌĞøÊ¹ÓÃ
-					(CPU_STK_SIZE)512,										//ÈÎÎñ¶ÑÕ»´óĞ¡			
-					(OS_MSG_QTY)0,											//½ûÖ¹ÈÎÎñÏûÏ¢¶ÓÁĞ
-					(OS_TICK)0,												//Ä¬ÈÏÊ±¼äÆ¬³¤¶È																
-					(void  *)0,												//²»ĞèÒª²¹³äÓÃ»§´æ´¢Çø
-					(OS_OPT)OS_OPT_TASK_NONE,								//Ã»ÓĞÈÎºÎÑ¡Ïî
-					&err													//·µ»ØµÄ´íÎóÂë
+	//åˆ›å»ºä»»åŠ¡
+	OSTaskCreate(	(OS_TCB *)&TASK_RGB_LED_TCB,							
+					(CPU_CHAR *)"task_rgb_led",								
+					(OS_TASK_PTR)task_rgb_led,								
+					(void *)0,												
+					(OS_PRIO)7,									
+					(CPU_STK *)task_rgb_led_stk,				
+					(CPU_STK_SIZE)512/10,						
+					(CPU_STK_SIZE)512,							
+					(OS_MSG_QTY)0,								
+					(OS_TICK)0,									
+					(void  *)0,									
+					(OS_OPT)OS_OPT_TASK_NONE,					
+					&err										
 				);
 					
-	//´´½¨ÈÎÎñ
-	OSTaskCreate(	(OS_TCB *)&TASK_RTC_TCB,									//ÈÎÎñ¿ØÖÆ¿é
-					(CPU_CHAR *)"task_rtc",									//ÈÎÎñµÄÃû×Ö
-					(OS_TASK_PTR)task_rtc,										//ÈÎÎñº¯Êı
-					(void *)0,												//´«µİ²ÎÊı
-					(OS_PRIO)7,											 	//ÈÎÎñµÄÓÅÏÈ¼¶7		
-					(CPU_STK *)task_rtc_stk,									//ÈÎÎñ¶ÑÕ»»ùµØÖ·
-					(CPU_STK_SIZE)512/10,									//ÈÎÎñ¶ÑÕ»Éî¶ÈÏŞÎ»£¬ÓÃµ½Õâ¸öÎ»ÖÃ£¬ÈÎÎñ²»ÄÜÔÙ¼ÌĞøÊ¹ÓÃ
-					(CPU_STK_SIZE)512,										//ÈÎÎñ¶ÑÕ»´óĞ¡			
-					(OS_MSG_QTY)0,											//½ûÖ¹ÈÎÎñÏûÏ¢¶ÓÁĞ
-					(OS_TICK)0,												//Ä¬ÈÏÊ±¼äÆ¬³¤¶È																
-					(void  *)0,												//²»ĞèÒª²¹³äÓÃ»§´æ´¢Çø
-					(OS_OPT)OS_OPT_TASK_NONE,								//Ã»ÓĞÈÎºÎÑ¡Ïî
-					&err													//·µ»ØµÄ´íÎóÂë
+	OSTaskCreate(	(OS_TCB *)&TASK_RTC_TCB,					
+					(CPU_CHAR *)"task_rtc",						
+					(OS_TASK_PTR)task_rtc,						
+					(void *)0,									
+					(OS_PRIO)7,									
+					(CPU_STK *)task_rtc_stk,					
+					(CPU_STK_SIZE)512/10,						
+					(CPU_STK_SIZE)512,										
+					(OS_MSG_QTY)0,											
+					(OS_TICK)0,												
+					(void  *)0,												
+					(OS_OPT)OS_OPT_TASK_NONE,								
+					&err													
 				);
 					
-	OSTaskCreate(	(OS_TCB *)&TASK_MQTT_CONNECT_TCB,						//ÈÎÎñ¿ØÖÆ¿é
-					(CPU_CHAR *)"task_mqtt_connect",						//ÈÎÎñµÄÃû×Ö
-					(OS_TASK_PTR)task_mqtt_connect,							//ÈÎÎñº¯Êı
-					(void *)0,												//´«µİ²ÎÊı
-					(OS_PRIO)6,											 	//ÈÎÎñµÄÓÅÏÈ¼¶6		
-					(CPU_STK *)task_mqtt_connect_stk,						//ÈÎÎñ¶ÑÕ»»ùµØÖ·
-					(CPU_STK_SIZE)512/10,									//ÈÎÎñ¶ÑÕ»Éî¶ÈÏŞÎ»£¬ÓÃµ½Õâ¸öÎ»ÖÃ£¬ÈÎÎñ²»ÄÜÔÙ¼ÌĞøÊ¹ÓÃ
-					(CPU_STK_SIZE)512,										//ÈÎÎñ¶ÑÕ»´óĞ¡			
-					(OS_MSG_QTY)0,											//½ûÖ¹ÈÎÎñÏûÏ¢¶ÓÁĞ
-					(OS_TICK)0,												//Ä¬ÈÏÊ±¼äÆ¬³¤¶È																
-					(void  *)0,												//²»ĞèÒª²¹³äÓÃ»§´æ´¢Çø
-					(OS_OPT)OS_OPT_TASK_NONE,								//Ã»ÓĞÈÎºÎÑ¡Ïî
-					&err													//·µ»ØµÄ´íÎóÂë
+	OSTaskCreate(	(OS_TCB *)&TASK_MQTT_CONNECT_TCB,						
+					(CPU_CHAR *)"task_mqtt_connect",						
+					(OS_TASK_PTR)task_mqtt_connect,							
+					(void *)0,												
+					(OS_PRIO)6,											 	
+					(CPU_STK *)task_mqtt_connect_stk,						
+					(CPU_STK_SIZE)512/10,									
+					(CPU_STK_SIZE)512,										
+					(OS_MSG_QTY)0,											
+					(OS_TICK)0,												
+					(void  *)0,												
+					(OS_OPT)OS_OPT_TASK_NONE,								
+					&err													
 				);
 					
-	//É¾³ı×ÔÉíÈÎÎñ£¬½øÈëĞİÃßÌ¬
+	OSTaskCreate(	(OS_TCB *)&TASK_RX_BUF_DEAL_TCB,						
+					(CPU_CHAR *)"task_rx_buf_deal",							
+					(OS_TASK_PTR)task_rx_buf_deal,							
+					(void *)0,												
+					(OS_PRIO)6,											 	
+					(CPU_STK *)task_rx_buf_deal,							
+					(CPU_STK_SIZE)128/10,									
+					(CPU_STK_SIZE)128,										
+					(OS_MSG_QTY)0,											
+					(OS_TICK)0,												
+					(void  *)0,												
+					(OS_OPT)OS_OPT_TASK_NONE,								
+					&err													
+				);
+					
+	//åˆ é™¤è‡ªèº«ä»»åŠ¡,è¿›å…¥æŒ‚èµ·çŠ¶æ€
 	OSTaskDel(NULL,&err);
 }
 
 
 
-//mqttÁ¬½ÓÈÎÎñ
+//mqtt è¿æ¥
 void task_mqtt_connect(void *parg)
 {
 	OS_ERR 		err;
 	
 	printf("task_mqtt_connect is create ok\r\n");
 	
-	AliIoT_Parameter_Init();		//³õÊ¼»¯Á¬½Ó²ÎÊı
+	AliIoT_Parameter_Init();		
 
 	while(1)
 	{
 		OSFlagPend(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,0,\
 										OS_OPT_PEND_FLAG_CLR_ALL+\
-										OS_OPT_PEND_BLOCKING, NULL, &err);		//×èÈûµÈ´ı
+										OS_OPT_PEND_BLOCKING, NULL, &err);		
 		mqtt_buffer_init();
 
 		while(esp8266_mqtt_init());
@@ -229,7 +240,27 @@ void task_mqtt_connect(void *parg)
 }
 
 
-//ledÈÎÎñ
+//mqttæ¥æ”¶æ¶ˆæ¯å¤„ç†
+void task_rx_buf_deal(void *parg)
+{
+	OS_ERR 		err;
+	
+	printf("task_rx_buf_deal is create ok\r\n");
+	
+
+	while(1)
+	{
+		OSFlagPend(&g_flag_grp,FLAG_GRP_ESP8266_RX_END,0,\
+										OS_OPT_PEND_FLAG_SET_ALL+\
+										OS_OPT_PEND_BLOCKING, NULL, &err);		
+		printf("\r\nrx end\r\n\r\n");
+		
+		OSFlagPost(&g_flag_grp,FLAG_GRP_ESP8266_RX_END,OS_OPT_POST_FLAG_CLR,&err);
+	}
+}
+
+
+//led
 void task_rgb_led(void *parg)
 {
 	int color=1;
@@ -261,13 +292,11 @@ void task_rtc(void *parg)
 		OSFlagPend(&g_flag_grp,FLAG_GRP_RTC_WAKEUP,0,OS_OPT_PEND_FLAG_SET_ALL +\
 													OS_OPT_PEND_FLAG_CONSUME + \
 													OS_OPT_PEND_BLOCKING, NULL, &err);
-			//»ñÈ¡ÈÕÆÚ
-			RTC_GetDate(RTC_Format_BCD,&RTC_DateStructure);
-			printf("20%02x/%02x/%02x Week:%x ",RTC_DateStructure.RTC_Year,RTC_DateStructure.RTC_Month,RTC_DateStructure.RTC_Date,RTC_DateStructure.RTC_WeekDay);			
-					
-			//»ñÈ¡Ê±¼ä
-			RTC_GetTime(RTC_Format_BCD,&RTC_TimeStructure);
-			printf("%02x:%02x:%02x\r\n",RTC_TimeStructure.RTC_Hours,RTC_TimeStructure.RTC_Minutes,RTC_TimeStructure.RTC_Seconds);
+		RTC_GetDate(RTC_Format_BCD,&RTC_DateStructure);
+		printf("20%02x/%02x/%02x Week:%x ",RTC_DateStructure.RTC_Year,RTC_DateStructure.RTC_Month,RTC_DateStructure.RTC_Date,RTC_DateStructure.RTC_WeekDay);			
+				
+		RTC_GetTime(RTC_Format_BCD,&RTC_TimeStructure);
+		printf("%02x:%02x:%02x\r\n",RTC_TimeStructure.RTC_Hours,RTC_TimeStructure.RTC_Minutes,RTC_TimeStructure.RTC_Seconds);
 			
 	}
 }
