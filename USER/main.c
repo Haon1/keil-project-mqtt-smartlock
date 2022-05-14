@@ -13,19 +13,24 @@
 //任务1控制块
 OS_TCB TASK_SYSTEM_INIT_TCB;
 void task_system_init(void *parg);
-CPU_STK task_system_init_stk[512];			//任务堆栈，大小为128字，也就是512字节
-
+CPU_STK task_system_init_stk[512];			//任务堆栈，大小为512字，也就是2048字节
 
 
 //任务LED控制块
 OS_TCB TASK_RGB_LED_TCB;
 void task_rgb_led(void *parg);
-CPU_STK task_rgb_led_stk[512];			//任务2的任务堆栈，大小为128字，也就是512字节
+CPU_STK task_rgb_led_stk[512];			//任务的任务堆栈，大小为512字，也就是2048字节
 
-//任务LED控制块
+//任务RTC控制块
 OS_TCB TASK_RTC_TCB;
 void task_rtc(void *parg);
-CPU_STK task_rtc_stk[512];			//任务2的任务堆栈，大小为128字，也就是512字节
+CPU_STK task_rtc_stk[512];			//任务的任务堆栈，大小为512字，也就是2048字节
+
+
+//任务RTC控制块
+OS_TCB TASK_MQTT_CONNECT_TCB;
+void task_mqtt_connect(void *parg);
+CPU_STK task_mqtt_connect_stk[512];			//任务的任务堆栈，大小为512字，也就是2048字节
 
 
 
@@ -143,11 +148,6 @@ void task_system_init(void *parg)
 	
 	tim3_init();
 	
-	AliIoT_Parameter_Init();
-	mqtt_buffer_init();
-	
-	//while(esp8266_mqtt_init());
-	
 	//创建互斥锁
 	OSMutexCreate(&g_mutex_printf,	"g_mutex_printf",&err);
 	
@@ -160,7 +160,7 @@ void task_system_init(void *parg)
 					(CPU_CHAR *)"task_rgb_led",									//任务的名字
 					(OS_TASK_PTR)task_rgb_led,										//任务函数
 					(void *)0,												//传递参数
-					(OS_PRIO)6,											 	//任务的优先级7		
+					(OS_PRIO)7,											 	//任务的优先级7		
 					(CPU_STK *)task_rgb_led_stk,									//任务堆栈基地址
 					(CPU_STK_SIZE)512/10,									//任务堆栈深度限位，用到这个位置，任务不能再继续使用
 					(CPU_STK_SIZE)512,										//任务堆栈大小			
@@ -171,13 +171,28 @@ void task_system_init(void *parg)
 					&err													//返回的错误码
 				);
 					
-		//创建任务
+	//创建任务
 	OSTaskCreate(	(OS_TCB *)&TASK_RTC_TCB,									//任务控制块
 					(CPU_CHAR *)"task_rtc",									//任务的名字
 					(OS_TASK_PTR)task_rtc,										//任务函数
 					(void *)0,												//传递参数
-					(OS_PRIO)6,											 	//任务的优先级7		
+					(OS_PRIO)7,											 	//任务的优先级7		
 					(CPU_STK *)task_rtc_stk,									//任务堆栈基地址
+					(CPU_STK_SIZE)512/10,									//任务堆栈深度限位，用到这个位置，任务不能再继续使用
+					(CPU_STK_SIZE)512,										//任务堆栈大小			
+					(OS_MSG_QTY)0,											//禁止任务消息队列
+					(OS_TICK)0,												//默认时间片长度																
+					(void  *)0,												//不需要补充用户存储区
+					(OS_OPT)OS_OPT_TASK_NONE,								//没有任何选项
+					&err													//返回的错误码
+				);
+					
+	OSTaskCreate(	(OS_TCB *)&TASK_MQTT_CONNECT_TCB,						//任务控制块
+					(CPU_CHAR *)"task_mqtt_connect",						//任务的名字
+					(OS_TASK_PTR)task_mqtt_connect,							//任务函数
+					(void *)0,												//传递参数
+					(OS_PRIO)6,											 	//任务的优先级6		
+					(CPU_STK *)task_mqtt_connect_stk,						//任务堆栈基地址
 					(CPU_STK_SIZE)512/10,									//任务堆栈深度限位，用到这个位置，任务不能再继续使用
 					(CPU_STK_SIZE)512,										//任务堆栈大小			
 					(OS_MSG_QTY)0,											//禁止任务消息队列
@@ -190,6 +205,29 @@ void task_system_init(void *parg)
 	//删除自身任务，进入休眠态
 	OSTaskDel(NULL,&err);
 }
+
+
+
+//mqtt连接任务
+void task_mqtt_connect(void *parg)
+{
+	OS_ERR 		err;
+	
+	printf("task_mqtt_connect is create ok\r\n");
+	
+	AliIoT_Parameter_Init();		//初始化连接参数
+
+	while(1)
+	{
+		OSFlagPend(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,0,\
+										OS_OPT_PEND_FLAG_CLR_ALL+\
+										OS_OPT_PEND_BLOCKING, NULL, &err);		//阻塞等待
+		mqtt_buffer_init();
+
+		while(esp8266_mqtt_init());
+	}
+}
+
 
 //led任务
 void task_rgb_led(void *parg)

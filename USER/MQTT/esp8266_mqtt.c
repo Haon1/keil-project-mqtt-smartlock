@@ -206,7 +206,7 @@ int mqtt_packet_encode(unsigned char *buf, int length)
  * @brief 剩余长度转换为十进制数
  * @param buf 剩余长度地址
  * @param length 转成十进制数存放
- * return int 剩余长度所占字节数
+ * @return int 剩余长度所占字节数
  */
 int mqtt_packet_decrypt_encode(const unsigned char *buf, int *length)
 {
