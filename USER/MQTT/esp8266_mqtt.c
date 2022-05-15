@@ -428,28 +428,30 @@ int32_t esp8266_connect_ali_broker(void)
 //mqtt消息接收处理
 void mqtt_receive_handle(unsigned char *recv_buf)
 {
-	int	bytes;							//剩余长度所占字节数
-	unsigned short recv_length = 0;		//接收消息总长度
-	int encode_len=0;					//剩余长度
+	int	bytes;
+	unsigned short recv_length = 0;
+	unsigned char *p = recv_buf+2;
+	int encode_len=0;
+	
 	
 	recv_length = recv_buf[0] | recv_buf[1] << 8;	
-	encode_len  = mqtt_packet_decrypt_encode(&recv_buf[3],&bytes);
+	encode_len  = mqtt_packet_decrypt_encode(&p[1],&bytes);
 	
 	printf("recv_length  %d \r\n",recv_length);
-	printf("receive type %#02x\r\n",recv_buf[2]);
+	printf("receive type %#02x\r\n",p[0]);
 	printf("encode_len  %d\r\n",encode_len);
 	
-	switch(recv_buf[2])
+	switch(p[0])
 	{
 		case 0x20:		//CONNACK
 		{
-			if(recv_buf[5] == 0x00)
+			if(p[3] == 0x00)
 			{
 				printf("The connection has been accepted by the server\r\n");
 			}
 			else
 			{
-				switch(recv_buf[5])
+				switch(p[3])
 				{
 					case 1:printf("connection refused, unsupported protocol version\r\n");
 					break;
@@ -469,7 +471,7 @@ void mqtt_receive_handle(unsigned char *recv_buf)
 		
 		case 0x90:		//SUBACK
 		{
-			switch(recv_buf[6])
+			switch(p[4])
 			{
 				case 0:printf("subcribe success - Maximum QoS 0\r\n");
 				break;
