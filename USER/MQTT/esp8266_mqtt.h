@@ -5,13 +5,13 @@
 
 
 
-/****************此处是阿里云服务器的公共实例登陆配置****************************************/
-#define  PRODUCTKEY           "a1EExFlVDfn"                                 //产品ID
-#define  PRODUCTKEY_LEN       strlen(PRODUCTKEY)                            //产品ID长度
-#define  DEVICENAME           "D001"                                        //设备名  
-#define  DEVICENAME_LEN       strlen(DEVICENAME)                            //设备名长度
-#define  DEVICESECRE          "e6eaac3c4a814b4b13cc3a6a78a4deb3"            //设备秘钥   
-#define  DEVICESECRE_LEN      strlen(DEVICESECRE)                           //设备秘钥长度
+/***************************姝ゅ涓洪樋閲屼簯瀹炰緥閰嶇疆  娉ㄦ剰鏇挎崲鎴愯嚜宸辩殑****************************************/
+#define  PRODUCTKEY           "a1EExFlVDfn"
+#define  PRODUCTKEY_LEN       strlen(PRODUCTKEY)
+#define  DEVICENAME           "D001"
+#define  DEVICENAME_LEN       strlen(DEVICENAME)
+#define  DEVICESECRE          "e6eaac3c4a814b4b13cc3a6a78a4deb3"
+#define  DEVICESECRE_LEN      strlen(DEVICESECRE)               
 
 extern char MQTT_BROKERADDRESS[128]; 	
 extern int  MQTT_BROKERPORT;	
@@ -25,31 +25,35 @@ extern int  USERNAME_LEN;
 extern char MQTT_PASSWD[128]; 
 extern int  PASSWD_LEN;
 
-#define	MQTT_PUBLISH_TOPIC 		"/sys/a10tC4OAAPc/smartdevice/thing/event/property/post"	//发布主题
-#define MQTT_SUBSCRIBE_TOPIC 	"/sys/a10tC4OAAPc/smartdevice/thing/service/property/set"	//订阅主题
+#define	MQTT_PUBLISH_TOPIC 		"/sys/a10tC4OAAPc/smartdevice/thing/event/property/post"
+#define MQTT_SUBSCRIBE_TOPIC 	"/sys/a10tC4OAAPc/smartdevice/thing/service/property/set"
 
 /****************************************************************************************************/
 
-#define	BUFF_UNIT	512		//缓冲区长度
-#define R_NUM		6		//接收缓冲区个数
-#define	T_NUM		6		//发送缓冲区个数
-#define	C_NUM		6		//命令缓冲区个数
+
+extern int mqtt_connect_broker_flag;
 
 
-extern	unsigned char  mqtt_rx_buf[R_NUM][BUFF_UNIT];            //数据的接收缓冲区,所有服务器发来的数据，存放在该缓冲区,缓冲区第一个字节存放数据长度
-extern	unsigned char *mqtt_rx_inptr;                            //指向接收缓冲区存放数据的位置
-extern	unsigned char *mqtt_rx_outptr;                           //指向接收缓冲区读取数据的位置
-extern	unsigned char *mqtt_rx_endptr;                           //指向接收缓冲区结束的位置
+#define	BUFF_UNIT	512
+#define R_NUM		6
+#define	T_NUM		6
+#define	C_NUM		6
 
-extern	unsigned char  mqtt_tx_buf[T_NUM][BUFF_UNIT];            //数据的发送缓冲区,所有发往服务器的数据，存放在该缓冲区,缓冲区第一个字节存放数据长度
-extern	unsigned char *mqtt_tx_inptr;                            //指向发送缓冲区存放数据的位置
-extern	unsigned char *mqtt_tx_outptr;                           //指向发送缓冲区读取数据的位置
-extern	unsigned char *mqtt_tx_endptr;                           //指向发送缓冲区结束的位置
 
-extern	unsigned char  mqtt_cmd_buf[C_NUM][BUFF_UNIT];               //命令数据的接收缓冲区
-extern	unsigned char *mqtt_cmd_inptr;                               //指向命令缓冲区存放数据的位置
-extern	unsigned char *mqtt_cmd_outptr;                              //指向命令缓冲区读取数据的位置
-extern	unsigned char *mqtt_cmd_endptr;                              //指向命令缓冲区结束的位置
+extern	unsigned char  mqtt_rx_buf[R_NUM][BUFF_UNIT];  
+extern	unsigned char *mqtt_rx_inptr;                  
+extern	unsigned char *mqtt_rx_outptr;                 
+extern	unsigned char *mqtt_rx_endptr;                 
+
+extern	unsigned char  mqtt_tx_buf[T_NUM][BUFF_UNIT];  
+extern	unsigned char *mqtt_tx_inptr;                  
+extern	unsigned char *mqtt_tx_outptr;                 
+extern	unsigned char *mqtt_tx_endptr;                 
+
+extern	unsigned char  mqtt_cmd_buf[C_NUM][BUFF_UNIT]; 
+extern	unsigned char *mqtt_cmd_inptr;                 
+extern	unsigned char *mqtt_cmd_outptr;                
+extern	unsigned char *mqtt_cmd_endptr;                
 
 
 #define BYTE0(dwTemp)       (*( char *)(&dwTemp))
@@ -84,7 +88,8 @@ uint32_t mqtt_publish_data(char *topic, char *message, uint8_t qos);
 //MQTT发送心跳包
 int32_t mqtt_send_heart(void);
 
-int32_t esp8266_mqtt_init(void);
+//连接代理
+int32_t esp8266_connect_ali_broker(void);
 
 //MQTT断开连接
 void mqtt_disconnect(void);

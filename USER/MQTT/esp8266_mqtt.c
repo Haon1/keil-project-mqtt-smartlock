@@ -11,6 +11,7 @@
 #include "includes.h"
 
 
+int mqtt_connect_broker_flag=0;
 
 uint32_t g_mqtt_tx_len;
 
@@ -506,14 +507,11 @@ void mqtt_report_devices_status(void)
     mqtt_publish_data(MQTT_PUBLISH_TOPIC,(char *)g_esp8266_tx_buf,0);
 }
 
-//连接broker  发送连接报文 订阅主题
-int32_t esp8266_mqtt_init(void)
+//连接broker
+int32_t esp8266_connect_ali_broker(void)
 {
 	int32_t 	rt;
 	OS_ERR 		err;
-	
-	//清空连接标志位
-	OSFlagPost(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,OS_OPT_POST_FLAG_CLR,&err);
 	
 	rt =esp8266_connect_server("TCP",MQTT_BROKERADDRESS,1883);
 	if(rt)
@@ -535,25 +533,7 @@ int32_t esp8266_mqtt_init(void)
 	printf("esp8266_entry_transparent_transmission success\r\n");
 	delay_ms(2000);
 	
-	//设置连接标志位
-	OSFlagPost(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,OS_OPT_POST_FLAG_SET,&err);
-	
-	//发送连接报文
-	if(mqtt_connect_packet())
-	{
-		printf("mqtt_connect fail\r\n");
-		return -4;	
-	}
-	printf("mqtt_connect success\r\n");
-	delay_ms(2000);		
-	
-	//订阅报文 
-	if(mqtt_subscribe_topic(MQTT_SUBSCRIBE_TOPIC,0,1))
-	{
-		printf("mqtt_subscribe_topic fail\r\n");
-		return -5;
-	}	
-	printf("mqtt_subscribe_topic success\r\n");
 	
 	return 0;
 }
+

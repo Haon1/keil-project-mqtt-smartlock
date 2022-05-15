@@ -30,7 +30,11 @@ CPU_STK task_mqtt_connect_stk[512];
 
 OS_TCB TASK_RX_BUF_DEAL_TCB;
 void task_rx_buf_deal(void *parg);
-CPU_STK task_rx_buf_deal_stk[128];			
+CPU_STK task_rx_buf_deal_stk[128];
+
+OS_TCB TASK_TX_BUF_DEAL_TCB;
+void task_tx_buf_deal(void *parg);
+CPU_STK task_tx_buf_deal_stk[128];	
 
 
 
@@ -213,6 +217,21 @@ void task_system_init(void *parg)
 					&err													
 				);
 					
+	OSTaskCreate(	(OS_TCB *)&TASK_TX_BUF_DEAL_TCB,						
+					(CPU_CHAR *)"task_tx_buf_deal",							
+					(OS_TASK_PTR)task_tx_buf_deal,							
+					(void *)0,												
+					(OS_PRIO)5,
+					(CPU_STK *)task_tx_buf_deal_stk,
+					(CPU_STK_SIZE)128/10,
+					(CPU_STK_SIZE)128,
+					(OS_MSG_QTY)0,
+					(OS_TICK)0,
+					(void  *)0,
+					(OS_OPT)OS_OPT_TASK_NONE,								
+					&err													
+				);
+					
 	//删除自身任务,进入挂起状态
 	OSTaskDel(NULL,&err);
 }
@@ -235,7 +254,28 @@ void task_mqtt_connect(void *parg)
 										OS_OPT_PEND_BLOCKING, NULL, &err);		
 		mqtt_buffer_init();
 
-		while(esp8266_mqtt_init());
+		//连接代理
+		while(esp8266_connect_ali_broker());
+		
+		//设置连接标志位为1   为了阻塞自身任务
+		OSFlagPost(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,OS_OPT_POST_FLAG_SET,&err);
+		mqtt_connect_broker_flag = 1;
+		
+		//发送连接报文
+		if(mqtt_connect_packet())
+		{
+			printf("mqtt_connect fail\r\n");
+		}
+		printf("mqtt_connect success\r\n");
+		delay_ms(2000);		
+		
+		//发送订阅报文
+		if(mqtt_subscribe_topic(MQTT_SUBSCRIBE_TOPIC,0,1))
+		{
+			printf("mqtt_subscribe_topic fail\r\n");
+		}	
+		printf("mqtt_subscribe_topic success\r\n");
+		
 	}
 }
 
@@ -244,6 +284,9 @@ void task_mqtt_connect(void *parg)
 void task_rx_buf_deal(void *parg)
 {
 	OS_ERR 		err;
+	int 		bytes;
+	unsigned short length = 0;
+	int 		color=1;
 	
 	printf("task_rx_buf_deal is create ok\r\n");
 	
@@ -252,10 +295,56 @@ void task_rx_buf_deal(void *parg)
 	{
 		OSFlagPend(&g_flag_grp,FLAG_GRP_ESP8266_RX_END,0,\
 										OS_OPT_PEND_FLAG_SET_ALL+\
-										OS_OPT_PEND_BLOCKING, NULL, &err);		
-		printf("\r\nrx end\r\n\r\n");
+										OS_OPT_PEND_BLOCKING, NULL, &err);	
+		
+		rgb_led_set_color(color++);
+		if(color >  7)
+			color = 1;
+		
+		while(mqtt_rx_inptr != mqtt_rx_outptr)
+		{
+			length = mqtt_rx_outptr[0] | mqtt_rx_outptr[1] << 8;
+			printf("receive  %d bytes\r\n",length);
+			printf("receive type is %02x\r\n",mqtt_rx_outptr[2]);
+			length = mqtt_packet_decrypt_encode(&mqtt_rx_outptr[3],&bytes);
+			printf("encode is %d\r\n",length);
+			
+			mqtt_rx_outptr += BUFF_UNIT;
+			if(mqtt_rx_outptr == mqtt_rx_endptr)
+				mqtt_rx_outptr = mqtt_rx_buf[0];
+		}
+		
+		
 		
 		OSFlagPost(&g_flag_grp,FLAG_GRP_ESP8266_RX_END,OS_OPT_POST_FLAG_CLR,&err);
+	}
+}
+
+
+//mqtt发送消息处理
+void task_tx_buf_deal(void *parg)
+{
+	OS_ERR 		err;
+	
+	printf("task_tx_buf_deal is create ok\r\n");
+	
+
+	while(1)
+	{
+		OSFlagPend(&g_flag_grp,FLAG_GRP_ESP8266_RX_END,0,\
+										OS_OPT_PEND_FLAG_SET_ALL+\
+										OS_OPT_PEND_BLOCKING, NULL, &err);	
+		
+		while(mqtt_tx_inptr != mqtt_tx_outptr)
+		{
+
+			mqtt_tx_outptr += BUFF_UNIT;
+			if(mqtt_tx_outptr == mqtt_tx_endptr)
+				mqtt_tx_outptr = mqtt_tx_buf[0];
+			
+			delay_ms(100);		//延时100ms
+		}
+		
 	}
 }
 
@@ -269,11 +358,11 @@ void task_rgb_led(void *parg)
 
 	while(1)
 	{
-		rgb_led_set_color(color++);
-		
-		delay_ms(1000);
-		if(color >  7)
-			color = 1;
+//		rgb_led_set_color(color++);
+//		
+//		delay_ms(1000);
+//		if(color >  7)
+//			color = 1;
 	}
 }
 

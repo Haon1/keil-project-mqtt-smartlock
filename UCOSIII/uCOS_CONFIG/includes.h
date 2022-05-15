@@ -83,7 +83,7 @@ extern OS_MUTEX					g_mutex_printf;			//»¥³âËøµÄ¶ÔÏó
 extern OS_FLAG_GRP   			g_flag_grp;				//ÊÂ¼ş±êÖ¾×é	
 
 
-//ÊÂ¼ş±êÖ¾×é£ºÓ²¼şÊ¹ÓÃµ½µÄ±êÖ¾Î»
+//äº‹ä»¶æ ‡å¿—ç»„
 #define FLAG_GRP_RTC_WAKEUP					0x01
 #define FLAG_GRP_MQTT_CONNECT				0x02
 #define FLAG_GRP_ESP8266_RX_END				0x04

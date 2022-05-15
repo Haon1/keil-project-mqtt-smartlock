@@ -167,73 +167,61 @@ void usart2_send_bytes(uint8_t *buf,uint32_t len)
 }
 
 
-void USART1_IRQHandler(void)                	//串口1中断服务程序
+void USART1_IRQHandler(void)
 {
 	//uint8_t d=0;
-
-	//进入中断
 	OSIntEnter();    
 
-	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)  //接收中断(接收到的数据必须是0x0d 0x0a结尾)
+	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
 	{
-		//接收串口数据
 		//d=USART_ReceiveData(USART1);	
-		
-		//清空串口接收中断标志位
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
 	} 
 	
-	//退出中断
 	OSIntExit();    	
 } 
 
 
-//esp8266使用串口2
-void USART2_IRQHandler(void)                	//串口2中断服务程序
+//esp8266
+void USART2_IRQHandler(void)
 {
 	uint8_t 	d=0;
 	OS_FLAGS  	flags=0;
 	OS_ERR 		err;
 
-	//进入中断
 	OSIntEnter();    
 
-	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)  //接收中断(接收到的数据必须是0x0d 0x0a结尾)
+	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
 	{
-		//接收串口数据
-		d=USART_ReceiveData(USART2);	
-		flags = OSFlagPend(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,0,\
-										OS_OPT_PEND_FLAG_SET_ALL +\
-										OS_OPT_PEND_NON_BLOCKING, NULL, &err);		//OS_OPT_PEND_NON_BLOCKING 不阻塞等待
-		if(!(flags & 0x02))												//如果连接 标志位等于0，当前还没有连接服务器，处于指令配置状态
+		d=USART_ReceiveData(USART2);
+//		flags = OSFlagPend(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,0,\
+//										OS_OPT_PEND_FLAG_SET_ALL +\
+		//										OS_OPT_PEND_NON_BLOCKING, NULL, &err);		//杩欓噷姘歌繙璧癷f
+		if(!mqtt_connect_broker_flag)	//鎵�浠ユ崲浜嗘櫘閫氭爣蹇椾綅
 		{                                
-			if(d)                                				//处于指令配置状态时，非零值才保存到缓冲区	
-				g_esp8266_rx_buf[g_esp8266_rx_cnt++] = d; 		//保存到缓冲区	
+			if(d)
+				g_esp8266_rx_buf[g_esp8266_rx_cnt++] = d; 
 				
 		}
 		else
-		{		                                        //反之Connect_flag等于1，连接上服务器了	
-			g_esp8266_rx_buf[g_esp8266_rx_cnt++] = d;   //把接收到的数据保存到g_esp8266_rx_buf中			
+		{
+			g_esp8266_rx_buf[g_esp8266_rx_cnt++] = d;
 			
-			if(g_esp8266_rx_cnt == 1)   					//如果g_esp8266_rx_cnt等于1，表示是接收的第1个数据，进入if分支				
+			if(g_esp8266_rx_cnt == 1)   					
 				TIM_Cmd(TIM3,ENABLE); 
-			else                       					//else分支，表示果g_esp8266_rx_cnt不等于1，不是接收的第一个数据
+			else
 				TIM_SetCounter(TIM3,0);  
 				
 		}
 		
-		
 #if EN_DEBUG_ESP8266		
-		//将接收到的数据发给串口1
 		USART_SendData(USART1,d);
 		while(USART_GetFlagStatus(USART1,USART_FLAG_TXE)==RESET);
 #endif	
 		
-		//清空串口接收中断标志位
 		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
 	} 
 	
-	//退出中断
 	OSIntExit();    	
 
 } 
