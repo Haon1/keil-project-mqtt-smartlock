@@ -97,4 +97,8 @@ void mqtt_disconnect(void);
 //上报设备状态
 void mqtt_report_devices_status(void);
 
+
+//mqtt娑堟伅鎺ユ敹澶勭悊
+void mqtt_receive_handle(unsigned char *recv_buf);
+
 #endif

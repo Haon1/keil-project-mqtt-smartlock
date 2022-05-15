@@ -77,62 +77,52 @@ void AliIoT_Parameter_Init(void)
 	printf("\r\n");
 }
 
-//»º³åÇø³õÊ¼»¯
 void mqtt_buffer_init(void)
 {
-	mqtt_rx_inptr  = mqtt_rx_buf[0];               //Ö¸Ïò½ÓÊÕ»º³åÇø´æ·ÅÊı¾İµÄÖ¸Õë¹éÎ»
-	mqtt_rx_outptr = mqtt_rx_inptr;               //Ö¸Ïò½ÓÊÕ»º³åÇø¶ÁÈ¡Êı¾İµÄÖ¸Õë¹éÎ»
-    mqtt_rx_endptr = mqtt_rx_buf[R_NUM-1];        //Ö¸Ïò½ÓÊÕ»º³åÇø½áÊøµÄÖ¸Õë¹éÎ»
+	mqtt_rx_inptr  = mqtt_rx_buf[0];
+	mqtt_rx_outptr = mqtt_rx_inptr;
+    mqtt_rx_endptr = mqtt_rx_buf[R_NUM-1];
+
+	mqtt_tx_inptr  = mqtt_tx_buf[0];
+	mqtt_tx_outptr = mqtt_tx_inptr;
+    mqtt_tx_endptr = mqtt_tx_buf[R_NUM-1];
 	
-	mqtt_tx_inptr  = mqtt_tx_buf[0];               //Ö¸Ïò·¢ËÍ»º³åÇø´æ·ÅÊı¾İµÄÖ¸Õë¹éÎ»
-	mqtt_tx_outptr = mqtt_tx_inptr;               //Ö¸Ïò·¢ËÍ»º³åÇø¶ÁÈ¡Êı¾İµÄÖ¸Õë¹éÎ»
-    mqtt_tx_endptr = mqtt_tx_buf[R_NUM-1];        //Ö¸Ïò·¢ËÍ»º³åÇø½áÊøµÄÖ¸Õë¹éÎ»
-	
-	mqtt_cmd_inptr  = mqtt_cmd_buf[0];               //Ö¸ÏòÃüÁî»º³åÇø´æ·ÅÊı¾İµÄÖ¸Õë¹éÎ»
-	mqtt_cmd_outptr = mqtt_cmd_inptr;               //Ö¸ÏòÃüÁî»º³åÇø¶ÁÈ¡Êı¾İµÄÖ¸Õë¹éÎ»
-    mqtt_cmd_endptr = mqtt_cmd_buf[R_NUM-1];        //Ö¸ÏòÃüÁî»º³åÇø½áÊøµÄÖ¸Õë¹éÎ»
+	mqtt_cmd_inptr  = mqtt_cmd_buf[0];
+	mqtt_cmd_outptr = mqtt_cmd_inptr;
+    mqtt_cmd_endptr = mqtt_cmd_buf[R_NUM-1];
 }
 
 
-/*----------------------------------------------------------*/
-/*º¯ÊıÃû£º´¦Àí·¢ËÍ»º³åÇø                                    */
-/*²Î  Êı£ºdata£ºÊı¾İ                                        */
-/*²Î  Êı£ºsize£ºÊı¾İ³¤¶È                                    */
-/*·µ»ØÖµ£ºÎŞ                                                */
-/*----------------------------------------------------------*/
+
+
 void mqtt_tx_buf_deal(unsigned char *data, int size)
 {
-	memcpy(&mqtt_tx_inptr[2],data,size);      	//¿½±´Êı¾İµ½·¢ËÍ»º³åÇø	
-	mqtt_tx_inptr[0] = BYTE1(size);              //¼ÇÂ¼Êı¾İ³¤¶È
-	mqtt_tx_inptr[1] = BYTE0(size);              //¼ÇÂ¼Êı¾İ³¤¶È
-	mqtt_tx_inptr+=BUFF_UNIT;                 	//Ö¸ÕëÏÂÒÆ
-	if(mqtt_tx_inptr==mqtt_tx_endptr)      		//Èç¹ûÖ¸Õëµ½»º³åÇøÎ²²¿ÁË
-		mqtt_tx_inptr = mqtt_tx_buf[0];    		//Ö¸Õë¹éÎ»µ½»º³åÇø¿ªÍ·
+	memcpy(&mqtt_tx_inptr[2],data,size);
+	mqtt_tx_inptr[0] = BYTE0(size);
+	mqtt_tx_inptr[1] = BYTE1(size);
+	mqtt_tx_inptr+=BUFF_UNIT;
+	if(mqtt_tx_inptr==mqtt_tx_endptr)
+		mqtt_tx_inptr = mqtt_tx_buf[0];
 }
 
-/*----------------------------------------------------------*/
-/*º¯ÊıÃû£º´¦Àí½ÓÊÕ»º³åÇø                                    */
-/*²Î  Êı£ºdata£ºÊı¾İ                                        */
-/*²Î  Êı£ºsize£ºÊı¾İ³¤¶È                                    */
-/*·µ»ØÖµ£ºÎŞ                                                */
-/*----------------------------------------------------------*/
+
 void mqtt_rx_buf_deal(unsigned char *data, int size)
 {
-	memcpy(&mqtt_rx_inptr[2],data,size);      	//¿½±´Êı¾İµ½½ÓÊÕ»º³åÇø	
-	mqtt_rx_inptr[0] = BYTE1(size);              //¼ÇÂ¼Êı¾İ³¤¶È
-	mqtt_rx_inptr[1] = BYTE0(size);              //¼ÇÂ¼Êı¾İ³¤¶È
-	mqtt_rx_inptr+=BUFF_UNIT;                 	//Ö¸ÕëÏÂÒÆ
-	if(mqtt_rx_inptr==mqtt_rx_endptr)      		//Èç¹ûÖ¸Õëµ½»º³åÇøÎ²²¿ÁË
-		mqtt_rx_inptr = mqtt_rx_buf[0];    		//Ö¸Õë¹éÎ»µ½»º³åÇø¿ªÍ·
+	memcpy(&mqtt_rx_inptr[2],data,size);	
+	mqtt_rx_inptr[0] = BYTE0(size);
+	mqtt_rx_inptr[1] = BYTE1(size);
+	mqtt_rx_inptr+=BUFF_UNIT;
+	if(mqtt_rx_inptr==mqtt_rx_endptr)
+		mqtt_rx_inptr = mqtt_rx_buf[0];
 }
 
-//MQTT·¢ËÍÊı¾İ
+//MQTTå‘é€æ•°æ®
 void mqtt_send_bytes(uint8_t *buf,uint32_t len)
 {
     esp8266_send_bytes(buf,len);
 }
 
-//·¢ËÍĞÄÌø°ü
+//å‘é€å¿ƒè·³åŒ…
 int32_t mqtt_send_heart(void)
 {	
 	uint8_t buf[2]={0xC0,0x00};
@@ -225,45 +215,39 @@ int mqtt_packet_decrypt_encode(const unsigned char *buf, int *length)
 		*length += tmp * pow(128,bytes);
 		bytes++;
 	}while(ch & 0x80);
-	//´¦Àí×î¸ßÎ»
+	//è®¡ç®—æœ€åä¸€ä¸ªå­—èŠ‚
 	*length += buf[bytes] * pow(128,bytes);
 	bytes++;
 
 	return bytes;
 }
 
-//MQTTÁ¬½Ó·şÎñÆ÷µÄ´ò°üº¯Êı
+//å‘é€MQTTè¿æ¥æŠ¥æ–‡
 int32_t mqtt_connect_packet(void)
 {
     uint32_t data_len;
-    uint32_t cnt=2;
-    uint32_t wait=0;
     g_mqtt_tx_len=0;
 	
-    //¿É±ä±¨Í·+Payload  Ã¿¸ö×Ö¶Î°üº¬Á½¸ö×Ö½ÚµÄ³¤¶È±êÊ¶
+	
     data_len = 10 + (CLIENTID_LEN+2) + (USERNAME_LEN+2) + (PASSWD_LEN+2);
 
-    //¹Ì¶¨±¨Í·
-    //¿ØÖÆ±¨ÎÄÀàĞÍ
 	g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x10;		//MQTT Message Type CONNECT
-    //Ê£Óà³¤¶È(²»°üÀ¨¹Ì¶¨Í·²¿)
+
 	g_mqtt_tx_len += mqtt_packet_encode(&g_esp8266_tx_buf[g_mqtt_tx_len], data_len);
 	
 
-    //¿É±ä±¨Í·
-    //Ğ­ÒéÃû
 	g_esp8266_tx_buf[g_mqtt_tx_len++] = 0;        	// Protocol Name Length MSB
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 4;        	// Protocol Name Length LSB
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 'M';        // ASCII Code for M
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 'Q';        // ASCII Code for Q
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 'T';        // ASCII Code for T
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 'T';        // ASCII Code for T
-    //Ğ­Òé¼¶±ğ
+
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 4;        	// MQTT Protocol version = 4
-    //Á¬½Ó±êÖ¾
+
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 0xc2;        // conn flags
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 0;        	// Keep-alive Time Length MSB
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = 60;        	// Keep-alive Time Length LSB  60SĞÄÌø°ü
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = 60;        	// Keep-alive Time Length LSB  60S
 
     g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(CLIENTID_LEN);// Client ID length MSB
     g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(CLIENTID_LEN);// Client ID length LSB
@@ -286,52 +270,13 @@ int32_t mqtt_connect_packet(void)
         g_mqtt_tx_len += PASSWD_LEN;
     }
 
+	memset((void *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
+	g_esp8266_rx_cnt=0;
 	
-    while(cnt--)
-    {
-        memset((void *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
-		g_esp8266_rx_cnt=0;
+	mqtt_send_bytes(g_esp8266_tx_buf,g_mqtt_tx_len);
 		
-        mqtt_send_bytes(g_esp8266_tx_buf,g_mqtt_tx_len);
-		
-        wait=3000;//µÈ´ı3sÊ±¼ä
-		
-        while(wait--)
-        {
-			delay_ms(1);
-
-			//¼ì²éÁ¬½ÓÈ·ÈÏ¹Ì¶¨±¨Í·
-            if((g_esp8266_rx_buf[0]==0x20) && (g_esp8266_rx_buf[1]==0x02)) 
-            {
-				if(g_esp8266_rx_buf[3] == 0x00)
-				{
-					printf("Á¬½ÓÒÑ±»·şÎñÆ÷¶Ë½ÓÊÜ£¬Á¬½ÓÈ·ÈÏ³É¹¦\r\n");
-					return 0;//Á¬½Ó³É¹¦
-				}
-				else
-				{
-					switch(g_esp8266_rx_buf[3])
-					{
-						case 1:printf("Á¬½ÓÒÑ¾Ü¾ø£¬²»Ö§³ÖµÄĞ­Òé°æ±¾\r\n");
-						break;
-						case 2:printf("Á¬½ÓÒÑ¾Ü¾ø£¬²»ºÏ¸ñµÄ¿Í»§¶Ë±êÊ¶·û\r\n");
-						break;		
-						case 3:printf("Á¬½ÓÒÑ¾Ü¾ø£¬·şÎñ¶Ë²»¿ÉÓÃ\r\n");
-						break;		
-						case 4:printf("Á¬½ÓÒÑ¾Ü¾ø£¬ÎŞĞ§µÄÓÃ»§»òÃÜÂë\r\n");
-						break;	
-						case 5:printf("Á¬½ÓÒÑ¾Ü¾ø£¬Î´ÊÚÈ¨\r\n");
-						break;
-						default:printf("Î´ÖªÏìÓ¦\r\n");
-						break;
-					}
-					return 0;
-				} 
-            }  
-        }
-    }
 	
-    return -1;
+    return 0;
 }
 
 //MQTT¶©ÔÄ/È¡Ïû¶©ÔÄÊı¾İ´ò°üº¯Êı
@@ -339,10 +284,7 @@ int32_t mqtt_connect_packet(void)
 //qos         ÏûÏ¢µÈ¼¶
 //whether     ¶©ÔÄ/È¡Ïû¶©ÔÄÇëÇó°ü
 int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether)
-{
-    uint32_t cnt=2;
-    uint32_t wait=0;
-	
+{	
     uint32_t topiclen = strlen(topic);
 
     uint32_t data_len = 2 + (topiclen+2) + (whether?1:0);//¿É±ä±¨Í·µÄ³¤¶È£¨2×Ö½Ú£©¼ÓÉÏÓĞĞ§ÔØºÉµÄ³¤¶È
@@ -376,58 +318,16 @@ int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether)
     }
 
 
-    while(cnt--)
-    {
-		g_esp8266_rx_cnt=0;
-        memset((void *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
-        mqtt_send_bytes(g_esp8266_tx_buf,g_mqtt_tx_len);
+	g_esp8266_rx_cnt=0;
+	memset((void *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
+	mqtt_send_bytes(g_esp8266_tx_buf,g_mqtt_tx_len);
 		
-        wait=3000;//µÈ´ı3sÊ±¼ä
-        while(wait--)
-        {
-			delay_ms(1);
-			
-			//¼ì²é¶©ÔÄÈ·ÈÏ±¨Í·
-            if(g_esp8266_rx_buf[0]==0x90)
-            {
-				printf("¶©ÔÄÖ÷ÌâÈ·ÈÏ³É¹¦\r\n");
-				
-				//»ñÈ¡Ê£Óà³¤¶È
-				if(g_esp8266_rx_buf[1]==3)
-				{
-					printf("Success - Maximum QoS 0 is %02X\r\n",g_esp8266_rx_buf[2]);
-					printf("Success - Maximum QoS 2 is %02X\r\n",g_esp8266_rx_buf[3]);		
-					printf("Failure is %02X\r\n",g_esp8266_rx_buf[4]);	
-				}
-				//»ñÈ¡Ê£Óà³¤¶È
-				if(g_esp8266_rx_buf[1]==2)
-				{
-					printf("Success - Maximum QoS 0 is %02X\r\n",g_esp8266_rx_buf[2]);
-					printf("Success - Maximum QoS 2 is %02X\r\n",g_esp8266_rx_buf[3]);			
-				}				
-				
-				//»ñÈ¡Ê£Óà³¤¶È
-				if(g_esp8266_rx_buf[1]==1)
-				{
-					printf("Success - Maximum QoS 0 is %02X\r\n",g_esp8266_rx_buf[2]);		
-				}	
-			
-                return 0;//¶©ÔÄ³É¹¦
-            }
-            
-        }
-    }
+
 	
-    if(cnt) 
-		return 0;	//¶©ÔÄ³É¹¦
-	
-    return -1;
+    return 0;
 }
 
-//MQTT·¢²¼Êı¾İ´ò°üº¯Êı
-//topic   Ö÷Ìâ
-//message ÏûÏ¢
-//qos     ÏûÏ¢µÈ¼¶
+
 uint32_t mqtt_publish_data(char *topic, char *message, uint8_t qos)
 {
 	static uint16_t id=0;	
@@ -437,27 +337,21 @@ uint32_t mqtt_publish_data(char *topic, char *message, uint8_t qos)
     uint32_t data_len;
 
     g_mqtt_tx_len=0;
-    //ÓĞĞ§ÔØºÉµÄ³¤¶ÈÕâÑù¼ÆËã£ºÓÃ¹Ì¶¨±¨Í·ÖĞµÄÊ£Óà³¤¶È×Ö¶ÎµÄÖµ¼õÈ¥¿É±ä±¨Í·µÄ³¤¶È
-    //QOSÎª0Ê±Ã»ÓĞ±êÊ¶·û
-    //Êı¾İ³¤¶È             Ö÷ÌâÃû   ±¨ÎÄ±êÊ¶·û   ÓĞĞ§ÔØºÉ
+
     if(qos)	data_len = (2+topicLength) + 2 + messageLength;
     else	data_len = (2+topicLength) + messageLength;
 
-    //¹Ì¶¨±¨Í·
-    //¿ØÖÆ±¨ÎÄÀàĞÍ
     g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x30;    // MQTT Message Type PUBLISH
 	
-    //Ê£Óà³¤¶È
 	g_mqtt_tx_len += mqtt_packet_encode(&g_esp8266_tx_buf[g_mqtt_tx_len], data_len);
 
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(topicLength);//Ö÷Ìâ³¤¶ÈMSB
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(topicLength);//Ö÷Ìâ³¤¶ÈLSB
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(topicLength);
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(topicLength);
 	
-    memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],topic,topicLength);//¿½±´Ö÷Ìâ
+    memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],topic,topicLength);
 	
     g_mqtt_tx_len += topicLength;
 
-    //±¨ÎÄ±êÊ¶·û
     if(qos)
     {
         g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(id);
@@ -468,27 +362,22 @@ uint32_t mqtt_publish_data(char *topic, char *message, uint8_t qos)
     memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],message,messageLength);
 	
     g_mqtt_tx_len += messageLength;
-	
 
 	mqtt_send_bytes(g_esp8266_tx_buf,g_mqtt_tx_len);
 	
-	//ÔÛÃÇµÄQosµÈ¼¶ÉèÖÃµÄÊÇ00£¬Òò´Ë°¢ÀïÔÆÎïÁªÍøÆ½Ì¨ÊÇÃ»ÓĞ·µ»ØÏìÓ¦ĞÅÏ¢µÄ
 	
 	return g_mqtt_tx_len;
 }
 
 
 
-//Éè±¸×´Ì¬ÉÏ±¨
+
 void mqtt_report_devices_status(void)
 {
     uint8_t led_1_sta = GPIO_ReadOutputDataBit(GPIOF,GPIO_Pin_9) ? 0:1;
     uint8_t led_2_sta = GPIO_ReadOutputDataBit(GPIOF,GPIO_Pin_10) ? 0:1;
     uint8_t led_3_sta = GPIO_ReadOutputDataBit(GPIOE,GPIO_Pin_13) ? 0:1;
 
-    //°Ñ¿ª·¢°åÏà¹ØµÄ×´Ì¬±äÁ¿ÀûÓÃsprintfº¯Êı´æ·Åµ½Ò»¸öÊı×éÀï£¬ÔÙ°Ñ¸ÃÊı×éÀûÓÃMQTTĞ­Òé´ò°ü³ÉÏûÏ¢±¨ÎÄ
-    //sprintf(str,"a=%d",a);
-    //ĞèÒª¸ü¸Ä¡°temperature¡±ºÍ¡°CurrentHumidity¡±Îª¶ÔÓ¦µÄÆ½Ì¨Éè±¸ĞÅÏ¢£»
     sprintf((char *)g_esp8266_tx_buf,
             "{\"method\":\"thing.service.property.post\",\"id\":\"0001\",\"params\":{\
 		\"temperature\":%d,\
@@ -503,11 +392,10 @@ void mqtt_report_devices_status(void)
             led_2_sta,
             led_3_sta);
 
-    //ÉÏ±¨ĞÅÏ¢µ½Æ½Ì¨·şÎñÆ÷
     mqtt_publish_data(MQTT_PUBLISH_TOPIC,(char *)g_esp8266_tx_buf,0);
 }
 
-//Á¬½Óbroker
+//è¿æ¥broker
 int32_t esp8266_connect_ali_broker(void)
 {
 	int32_t 	rt;
@@ -523,7 +411,7 @@ int32_t esp8266_connect_ali_broker(void)
 	
 	delay_ms(2000);
 	
-	//½øÈëÍ¸´«Ä£Ê½
+	//è¿›å…¥é€ä¼ 
 	rt =esp8266_entry_transparent_transmission();
 	if(rt)
 	{
@@ -537,3 +425,62 @@ int32_t esp8266_connect_ali_broker(void)
 	return 0;
 }
 
+//mqttæ¶ˆæ¯æ¥æ”¶å¤„ç†
+void mqtt_receive_handle(unsigned char *recv_buf)
+{
+	int	bytes;							//å‰©ä½™é•¿åº¦æ‰€å å­—èŠ‚æ•°
+	unsigned short recv_length = 0;		//æ¥æ”¶æ¶ˆæ¯æ€»é•¿åº¦
+	int encode_len=0;					//å‰©ä½™é•¿åº¦
+	
+	recv_length = recv_buf[0] | recv_buf[1] << 8;	
+	encode_len  = mqtt_packet_decrypt_encode(&recv_buf[3],&bytes);
+	
+	printf("recv_length  %d \r\n",recv_length);
+	printf("receive type %#02x\r\n",recv_buf[2]);
+	printf("encode_len  %d\r\n",encode_len);
+	
+	switch(recv_buf[2])
+	{
+		case 0x20:		//CONNACK
+		{
+			if(recv_buf[5] == 0x00)
+			{
+				printf("The connection has been accepted by the server\r\n");
+			}
+			else
+			{
+				switch(recv_buf[5])
+				{
+					case 1:printf("connection refused, unsupported protocol version\r\n");
+					break;
+					case 2:printf("connection refused, unqualified client identification\r\n");
+					break;		
+					case 3:printf("connection refused, server is unavailable\r\n");
+					break;		
+					case 4:printf("connection refused, invalid username or password\r\n");
+					break;	
+					case 5:printf("connection refused, unauthorized\r\n");
+					break;
+					default:printf("unknown mistake\r\n");
+					break;
+				}
+			} 
+		}break;
+		
+		case 0x90:		//SUBACK
+		{
+			switch(recv_buf[6])
+			{
+				case 0:printf("subcribe success - Maximum QoS 0\r\n");
+				break;
+				case 1:printf("subcribe success - Maximum QoS 1\r\n");
+				break;
+				case 2:printf("subcribe success - Maximum QoS 2\r\n");
+				break;
+				case 128:printf("subcribe failure\r\n");
+				break;
+			}
+		}break;
+		
+	}
+}

@@ -80,16 +80,15 @@ void esp8266_send_str(char *buf)
 
 }
 
-/* ²éÕÒ½ÓÊÕÊı¾İ°üÖĞµÄ×Ö·û´® */
+
 int32_t esp8266_find_str_in_rx_packet(char *str,uint32_t timeout)
 {
 	char *dest = str;
 	char *src  = (char *)&g_esp8266_rx_buf;
 	
-	//µÈ´ı´®¿Ú½ÓÊÕÍê±Ï»ò³¬Ê±ÍË³ö
 	while((strstr(src,dest)==NULL) && timeout)
 	{		
-		delay_ms(100);		//100ms¼ì²éÒ»´Î¼´¿É
+		delay_ms(100);		//100msæŸ¥æ‰¾ä¸€æ¬¡
 		timeout -= 100;
 	}
 
@@ -100,7 +99,7 @@ int32_t esp8266_find_str_in_rx_packet(char *str,uint32_t timeout)
 }
 
 
-/* ×Ô¼ì³ÌĞò */
+
 int32_t  esp8266_self_test(void)
 {
 	esp8266_send_at("AT\r\n");
@@ -123,20 +122,17 @@ int32_t  esp8266_self_test(void)
 int32_t __esp8266_connect_ap(char* ssid,char* pswd)
 {
 #if 0
-	//²»½¨ÒéÊ¹ÓÃÒÔÏÂsprintf£¬Õ¼ÓÃ¹ı¶àµÄÕ»
 	char buf[128]={0};
 	
 	sprintf(buf,"AT+CWJAP_CUR=\"%s\",\"%s\"\r\n",ssid,pswd);
 
 #endif
-    //ÉèÖÃÎªSTATIONÄ£Ê½	
 	esp8266_send_at("AT+CWMODE_CUR=1\r\n"); 
 	
 	if(esp8266_find_str_in_rx_packet("OK",1000))
 		return -1;
 
 
-	//Á¬½ÓÄ¿±êAP
 	//sprintf(buf,"AT+CWJAP_CUR=\"%s\",\"%s\"\r\n",ssid,pswd);
 	esp8266_send_at("AT+CWJAP_CUR="); 
 	esp8266_send_at("\"");esp8266_send_at(ssid);esp8266_send_at("\"");	
@@ -150,12 +146,10 @@ int32_t __esp8266_connect_ap(char* ssid,char* pswd)
 	return 0;
 }
 
-//Á¬½Ówifi
 int32_t esp8266_connect_ap(void)
 {
 	int32_t rt;
 	
-	//ÍË³öÍ¸´«Ä£Ê½£¬²ÅÄÜÊäÈëATÖ¸Áî
 	rt=esp8266_exit_transparent_transmission();
 	
 	if(rt)
@@ -165,8 +159,7 @@ int32_t esp8266_connect_ap(void)
 	}	
 	printf("esp8266_exit_transparent_transmission success\r\n");
 	delay_ms(2000);
-	
-	//ÖØÆôÄ£¿é
+
 	rt=esp8266_restart();
 	if(rt)
 	{
@@ -176,7 +169,6 @@ int32_t esp8266_connect_ap(void)
 	printf("esp8266_restart success\r\n");
 	delay_ms(2000);	
 	
-	//¹Ø±Õ»ØÏÔ
 	rt=esp8266_enable_echo(0);
 	if(rt)
 	{
@@ -186,7 +178,6 @@ int32_t esp8266_connect_ap(void)
 	printf("esp8266_enable_echo(0)success\r\n");
 	delay_ms(2000);	
 	
-		//Á¬½ÓÈÈµã
 	rt = __esp8266_connect_ap(WIFI_SSID,WIFI_PASSWORD);
 	if(rt)
 	{
@@ -200,36 +191,31 @@ int32_t esp8266_connect_ap(void)
 }
 
 
-/* ÍË³öÍ¸´«Ä£Ê½ */
 int32_t esp8266_exit_transparent_transmission (void)
 {
 
 	esp8266_send_at ("+++");
 	
-	//ÍË³öÍ¸´«Ä£Ê½£¬·¢ËÍÏÂÒ»ÌõATÖ¸ÁîÒª¼ä¸ô1Ãë
 	delay_ms ( 1000 ); 
 	
-	//¼ÇÂ¼µ±Ç°esp8266¹¤×÷ÔÚ·ÇÍ¸´«Ä£Ê½
 	g_esp8266_transparent_transmission_sta = 0;
 
 	return 0;
 }
 
-/* ½øÈëÍ¸´«Ä£Ê½ */
+
 int32_t  esp8266_entry_transparent_transmission(void)
 {
-	//½øÈëÍ¸´«Ä£Ê½
 	esp8266_send_at("AT+CIPMODE=1\r\n");  
 	if(esp8266_find_str_in_rx_packet("OK",5000))
 		return -1;
 	
 	delay_ms(2000);
-	//¿ªÆô·¢ËÍ×´Ì¬
+
 	esp8266_send_at("AT+CIPSEND\r\n");
 	if(esp8266_find_str_in_rx_packet("OK",5000))
 		return -2;
 
-	//¼ÇÂ¼µ±Ç°esp8266¹¤×÷ÔÚÍ¸´«Ä£Ê½
 	g_esp8266_transparent_transmission_sta = 1;
 	return 0;
 }
@@ -258,7 +244,7 @@ int32_t esp8266_connect_server(char* mode,char* ip,uint16_t port)
 	
 	char buf[128]={0};
 	
-	//Á¬½Ó·şÎñÆ÷
+
 	sprintf((char*)buf,"AT+CIPSTART=\"%s\",\"%s\",%d\r\n",mode,ip,port);
 	
 	esp8266_send_at(buf);
@@ -283,7 +269,7 @@ int32_t esp8266_connect_server(char* mode,char* ip,uint16_t port)
 }
 
 
-/* ¶Ï¿ª·şÎñÆ÷ */
+
 int32_t esp8266_disconnect_server(void)
 {
 	esp8266_send_at("AT+CIPCLOSE\r\n");
@@ -295,7 +281,7 @@ int32_t esp8266_disconnect_server(void)
 	return 0;	
 }
 
-/*»ñÈ¡ÍøÂçÊ±¼ä*/
+
 int32_t esp8266_get_network_time(void)
 {
 	int32_t rt;
@@ -308,7 +294,7 @@ int32_t esp8266_get_network_time(void)
 	}	
 	printf("esp8266_connect_time_server success\r\n");
 	
-	//½øÈëÍ¸´«Ä£Ê½
+	
 	rt =esp8266_entry_transparent_transmission();
 	if(rt)
 	{
@@ -326,7 +312,7 @@ int32_t esp8266_get_network_time(void)
 	return 0;
 }
 
-/*ºÍÊ±¼äapi½¨Á¢tcpÁ¬½Ó*/
+
 int32_t esp8266_connect_time_server(void)
 {
 	int32_t rt;
@@ -339,12 +325,12 @@ int32_t esp8266_connect_time_server(void)
 	return 0;
 }
 
-//¶Ï¿ªºÍÊ±¼äapiµÄ  tcpÁ¬½Ó
+
 int32_t esp8266_disconnect_time_server(void)
 {
 	int32_t rt;
 	
-	//ÍË³öÍ¸´«Ä£Ê½£¬²ÅÄÜÊäÈëATÖ¸Áî
+
 	rt=esp8266_exit_transparent_transmission();
 	if(rt)
 	{
@@ -365,7 +351,7 @@ int32_t esp8266_disconnect_time_server(void)
 	return 0;
 }
 
-/* Ê¹ÄÜ¶àÁ´½Ó */
+
 int32_t esp8266_enable_multiple_id(uint32_t b)
 {
 
@@ -380,7 +366,7 @@ int32_t esp8266_enable_multiple_id(uint32_t b)
 	return 0;
 }
 
-/* ´´½¨·şÎñÆ÷ */
+
 int32_t esp8266_create_server(uint16_t port)
 {
 	char buf[32]={0};
@@ -394,7 +380,7 @@ int32_t esp8266_create_server(uint16_t port)
 	return 0;
 }
 
-/* ¹Ø±Õ·şÎñÆ÷ */
+
 int32_t esp8266_close_server(uint16_t port)
 {
 	char buf[32]={0};
@@ -408,7 +394,7 @@ int32_t esp8266_close_server(uint16_t port)
 	return 0;
 }
 
-/* »ØÏÔ´ò¿ª»ò¹Ø±Õ */
+
 int32_t esp8266_enable_echo(uint32_t b)
 {
 	if(b)
@@ -422,7 +408,7 @@ int32_t esp8266_enable_echo(uint32_t b)
 	return 0;
 }
 
-/* ÖØÆô */
+
 int32_t esp8266_restart(void)
 {
 	esp8266_send_at("AT+RST\r\n");
