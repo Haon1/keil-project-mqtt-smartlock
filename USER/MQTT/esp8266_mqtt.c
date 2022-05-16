@@ -435,9 +435,9 @@ void mqtt_receive_handle(unsigned char *recv_buf)
 	
 	
 	recv_length = recv_buf[0] | recv_buf[1] << 8;	
-	encode_len  = mqtt_packet_decrypt_encode(&p[1],&bytes);
+	bytes  = mqtt_packet_decrypt_encode(&p[1],&encode_len);
 	
-	printf("\r\n-------------------------------msg---------------------------\r\n");
+	printf("\r\n-------------------------------msg------------------------------\r\n");
 	printf("receive length:[%d] type:[%#02x] encode_len:[%d] encode_byte:[%d]\r\n",\
 												recv_length,p[0],encode_len,bytes);
 	printf("-----------------------------------------------------------------\r\n");
@@ -485,6 +485,10 @@ void mqtt_receive_handle(unsigned char *recv_buf)
 			}
 		}break;
 		
+		case 0xD0:		//PINGRESP
+		{
+			printf("get ping response\r\n");
+		}break;
 	}
 
 	printf("-----------------------------------------------------------------\r\n");
