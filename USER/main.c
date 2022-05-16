@@ -70,7 +70,7 @@ void dgb_printf_safe(const char *format, ...)
 #endif
 }
 
-//回调注册
+//mqtt receive callback register
 void RecvCBRegister(RecvCallBack pCBS)
 {
 	if(RCBS == NULL)
@@ -114,7 +114,7 @@ int main(void)
 
 					
 
-	//启动系统调度
+	//start OS
 	OSStart(&err);
 							
 	printf(".......\r\n");
@@ -130,13 +130,13 @@ void task_system_init(void *parg)
 	OS_ERR err;
 	printf("task_system_init is create ok\r\n");
 	
-	//8266引脚初始化
+	//esp8266 hardware init
 	esp8266_init();
 
-	//连接路由器
+	//connect ap
 	while(esp8266_connect_ap());
 	
-	//同步本地时间
+	//sync rtc
 	rt = sync_local_time();
 	if(rt == -1)			
 	{
@@ -160,20 +160,22 @@ void task_system_init(void *parg)
 	//LED_Init();
          											
 	beep_init();
+	
 	rgb_led_init();
 	
 	tim3_init();
 	
+	//callback register
 	RecvCBRegister(mqtt_receive_handle);
 	
-	//创建互斥锁
+	//create mutex
 	OSMutexCreate(&g_mutex_printf,	"g_mutex_printf",&err);
 	
-	//创建事件标志组
+	//create flag group
 	OSFlagCreate(&g_flag_grp,"g_flag_grp",0,&err);
 	
 	
-	//创建任务  led
+	//create task  led
 	OSTaskCreate(	(OS_TCB *)&TASK_RGB_LED_TCB,
 					(CPU_CHAR *)"task_rgb_led",
 					(OS_TASK_PTR)task_rgb_led,
@@ -188,7 +190,7 @@ void task_system_init(void *parg)
 					(OS_OPT)OS_OPT_TASK_NONE,
 					&err
 				);
-	//创建任务 rtc		
+	//create task rtc		
 	OSTaskCreate(	(OS_TCB *)&TASK_RTC_TCB,
 					(CPU_CHAR *)"task_rtc",
 					(OS_TASK_PTR)task_rtc,
@@ -203,7 +205,7 @@ void task_system_init(void *parg)
 					(OS_OPT)OS_OPT_TASK_NONE,
 					&err
 				);
-	//创建任务 mqtt连接			
+	//create task  mqtt connect		
 	OSTaskCreate(	(OS_TCB *)&TASK_MQTT_CONNECT_TCB,
 					(CPU_CHAR *)"task_mqtt_connect",
 					(OS_TASK_PTR)task_mqtt_connect,
@@ -218,7 +220,7 @@ void task_system_init(void *parg)
 					(OS_OPT)OS_OPT_TASK_NONE,
 					&err
 				);
-	//创建任务 接收缓冲区处理		
+	//create task		
 	OSTaskCreate(	(OS_TCB *)&TASK_RX_BUF_DEAL_TCB,						
 					(CPU_CHAR *)"task_rx_buf_deal",							
 					(OS_TASK_PTR)task_rx_buf_deal,							
@@ -233,7 +235,7 @@ void task_system_init(void *parg)
 					(OS_OPT)OS_OPT_TASK_NONE,								
 					&err													
 				);
-	//创建任务 发送缓冲区处理
+	//create task
 	OSTaskCreate(	(OS_TCB *)&TASK_TX_BUF_DEAL_TCB,						
 					(CPU_CHAR *)"task_tx_buf_deal",							
 					(OS_TASK_PTR)task_tx_buf_deal,							
@@ -249,13 +251,13 @@ void task_system_init(void *parg)
 					&err													
 				);
 					
-	//删除自身任务,进入挂起状态
+	//	Delete its own task and enter the suspended state
 	OSTaskDel(NULL,&err);
 }
 
 
 
-//mqtt 连接
+//mqtt connect
 void task_mqtt_connect(void *parg)
 {
 	OS_ERR 		err;
@@ -271,30 +273,29 @@ void task_mqtt_connect(void *parg)
 										OS_OPT_PEND_BLOCKING, NULL, &err);		
 		mqtt_buffer_init();
 
-		//连接代理
+		//connect ali broker
 		while(esp8266_connect_ali_broker());
 		
-		//设置连接标志位为1   为了阻塞自身任务
+		//set mqtt connect broker flag  1
 		OSFlagPost(&g_flag_grp,FLAG_GRP_MQTT_CONNECT,OS_OPT_POST_FLAG_SET,&err);
 		mqtt_connect_broker_flag = 1;
 		
-		//发送连接报文
+		//send mqtt connect packet
 		mqtt_connect_packet();
 
 		delay_ms(2000);		
 		
-		//发送订阅报文
+		//send subcribe packet 
 		mqtt_subscribe_topic(MQTT_SUBSCRIBE_TOPIC,0,1);
 		
 	}
 }
 
 
-//mqtt接收消息处理
+//Process the data in the receive buffer
 void task_rx_buf_deal(void *parg)
 {
 	OS_ERR 		err;
-	int color=1;
 	
 	printf("task_rx_buf_deal is create ok\r\n");
 	
@@ -304,9 +305,6 @@ void task_rx_buf_deal(void *parg)
 		OSFlagPend(&g_flag_grp,FLAG_GRP_ESP8266_RX_END,0,\
 										OS_OPT_PEND_FLAG_SET_ALL+\
 										OS_OPT_PEND_BLOCKING, NULL, &err);	
-//		printf("end\r\n");
-//		rgb_led_set_color(color++);
-//		if(color >7 )	color = 1;
 		
 		while(mqtt_rx_inptr != mqtt_rx_outptr)
 		{			
@@ -318,13 +316,13 @@ void task_rx_buf_deal(void *parg)
 			delay_ms(1000);
 		}
 		
-		
+		//After processing, clear the flag bit
 		OSFlagPost(&g_flag_grp,FLAG_GRP_ESP8266_RX_END,OS_OPT_POST_FLAG_CLR,&err);
 	}
 }
 
 
-//mqtt发送消息处理
+//Process the data in the send buffer
 void task_tx_buf_deal(void *parg)
 {
 	OS_ERR 		err;
@@ -345,14 +343,14 @@ void task_tx_buf_deal(void *parg)
 			if(mqtt_tx_outptr == mqtt_tx_endptr)
 				mqtt_tx_outptr = mqtt_tx_buf[0];
 			
-			delay_ms(100);		//延时100ms
+			delay_ms(100);		//delay 100ms
 		}
 		
 	}
 }
 
 
-//led
+//task block led
 void task_rgb_led(void *parg)
 {
 	int color=1;
@@ -369,7 +367,7 @@ void task_rgb_led(void *parg)
 	}
 }
 
-//rtc 
+//task block rtc 
 void task_rtc(void *parg)
 {
 	OS_ERR err;
@@ -381,6 +379,7 @@ void task_rtc(void *parg)
 
 	while(1)
 	{
+		//Block waiting for RTC to wake up
 		OSFlagPend(&g_flag_grp,FLAG_GRP_RTC_WAKEUP,0,OS_OPT_PEND_FLAG_SET_ALL +\
 													OS_OPT_PEND_FLAG_CONSUME + \
 													OS_OPT_PEND_BLOCKING, NULL, &err);
