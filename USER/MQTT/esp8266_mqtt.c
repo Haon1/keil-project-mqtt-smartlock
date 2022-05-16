@@ -15,65 +15,65 @@ int mqtt_connect_broker_flag=0;
 
 uint32_t g_mqtt_tx_len;
 
-char MQTT_BROKERADDRESS[128]; 		//IOTµØÖ·//"xxx.iot-as-mqtt.cn-shanghai.aliyuncs.com"
-int  MQTT_BROKERPORT;				//IOT¶Ë¿Ú
+char MQTT_BROKERADDRESS[128]; 		//IOT??Ö·//"xxx.iot-as-mqtt.cn-shanghai.aliyuncs.com"
+int  MQTT_BROKERPORT;				//IOT?Ë¿?
 
 char MQTT_CLIENTID[128]; 			//CLIENT ID "***|securemode=3,signmethod=hmacsha1|"
 int  CLIENTID_LEN;
-char MQTT_USERNAME[128]; 			//ÓÃ»§Ãû"***&xxx"
+char MQTT_USERNAME[128]; 			//?Ã»???"***&xxx"
 int  USERNAME_LEN;
-char MQTT_PASSWD[128]; 				//ÃÜÂë   
+char MQTT_PASSWD[128]; 				//????   
 int  PASSWD_LEN;
 
 
-unsigned char  mqtt_rx_buf[R_NUM][BUFF_UNIT];            //Êı¾İµÄ½ÓÊÕ»º³åÇø,ËùÓĞ·şÎñÆ÷·¢À´µÄÊı¾İ£¬´æ·ÅÔÚ¸Ã»º³åÇø,»º³åÇøµÚÒ»¸ö×Ö½Ú´æ·ÅÊı¾İ³¤¶È
-unsigned char *mqtt_rx_inptr;                            //Ö¸Ïò½ÓÊÕ»º³åÇø´æ·ÅÊı¾İµÄÎ»ÖÃ
-unsigned char *mqtt_rx_outptr;                           //Ö¸Ïò½ÓÊÕ»º³åÇø¶ÁÈ¡Êı¾İµÄÎ»ÖÃ
-unsigned char *mqtt_rx_endptr;                           //Ö¸Ïò½ÓÊÕ»º³åÇø½áÊøµÄÎ»ÖÃ
+unsigned char  mqtt_rx_buf[R_NUM][BUFF_UNIT];            //???İµÄ½??Õ»?????,???Ğ·???????À´?????İ£??????Ú¸Ã»?????,????????Ò»???Ö½Ú´??????İ³???
+unsigned char *mqtt_rx_inptr;                            //Ö¸?????Õ»????????????İµ?Î»??
+unsigned char *mqtt_rx_outptr;                           //Ö¸?????Õ»???????È¡???İµ?Î»??
+unsigned char *mqtt_rx_endptr;                           //Ö¸?????Õ»???????????Î»??
 
-unsigned char  mqtt_tx_buf[T_NUM][BUFF_UNIT];            //Êı¾İµÄ·¢ËÍ»º³åÇø,ËùÓĞ·¢Íù·şÎñÆ÷µÄÊı¾İ£¬´æ·ÅÔÚ¸Ã»º³åÇø,»º³åÇøµÚÒ»¸ö×Ö½Ú´æ·ÅÊı¾İ³¤¶È
-unsigned char *mqtt_tx_inptr;                            //Ö¸Ïò·¢ËÍ»º³åÇø´æ·ÅÊı¾İµÄÎ»ÖÃ
-unsigned char *mqtt_tx_outptr;                           //Ö¸Ïò·¢ËÍ»º³åÇø¶ÁÈ¡Êı¾İµÄÎ»ÖÃ
-unsigned char *mqtt_tx_endptr;                           //Ö¸Ïò·¢ËÍ»º³åÇø½áÊøµÄÎ»ÖÃ
+unsigned char  mqtt_tx_buf[T_NUM][BUFF_UNIT];            //???İµÄ·??Í»?????,???Ğ·??????????????İ£??????Ú¸Ã»?????,????????Ò»???Ö½Ú´??????İ³???
+unsigned char *mqtt_tx_inptr;                            //Ö¸?????Í»????????????İµ?Î»??
+unsigned char *mqtt_tx_outptr;                           //Ö¸?????Í»???????È¡???İµ?Î»??
+unsigned char *mqtt_tx_endptr;                           //Ö¸?????Í»???????????Î»??
 
-unsigned char  mqtt_cmd_buf[C_NUM][BUFF_UNIT];               //ÃüÁîÊı¾İµÄ½ÓÊÕ»º³åÇø
-unsigned char *mqtt_cmd_inptr;                               //Ö¸ÏòÃüÁî»º³åÇø´æ·ÅÊı¾İµÄÎ»ÖÃ
-unsigned char *mqtt_cmd_outptr;                              //Ö¸ÏòÃüÁî»º³åÇø¶ÁÈ¡Êı¾İµÄÎ»ÖÃ
-unsigned char *mqtt_cmd_endptr;                              //Ö¸ÏòÃüÁî»º³åÇø½áÊøµÄÎ»ÖÃ
+unsigned char  mqtt_cmd_buf[C_NUM][BUFF_UNIT];               //???????İµÄ½??Õ»?????
+unsigned char *mqtt_cmd_inptr;                               //Ö¸?????î»º???????????İµ?Î»??
+unsigned char *mqtt_cmd_outptr;                              //Ö¸?????î»º??????È¡???İµ?Î»??
+unsigned char *mqtt_cmd_endptr;                              //Ö¸?????î»º??????????Î»??
 
 
 
 /*----------------------------------------------------------*/
-/*º¯ÊıÃû£º°¢ÀïÔÆ³õÊ¼»¯²ÎÊı£¬µÃµ½¿Í»§¶ËID£¬ÓÃ»§ÃûºÍÃÜÂë      */
-/*²Î  Êı£ºÎŞ                                                */
-/*·µ»ØÖµ£ºÎŞ                                                */
+/*?????û£º°¢???Æ³?Ê¼?????????Ãµ??Í»???ID???Ã»?????????      */
+/*??  ??????                                                */
+/*????Öµ????                                                */
 /*----------------------------------------------------------*/
 void AliIoT_Parameter_Init(void)
 {	
-	char temp[128];                                                       //¼ÆËã¼ÓÃÜµÄÊ±ºò£¬ÁÙÊ±Ê¹ÓÃµÄ»º³åÇø
+	char temp[128];                                                       //???????Üµ?Ê±??????Ê±Ê¹?ÃµÄ»?????
 
-	memset(MQTT_CLIENTID,128,0);                                               //¿Í»§¶ËIDµÄ»º³åÇøÈ«²¿ÇåÁã
-	sprintf(MQTT_CLIENTID,"%s|securemode=3,signmethod=hmacsha1|",DEVICENAME);  //¹¹½¨¿Í»§¶ËID£¬²¢´æÈë»º³åÇø
-	CLIENTID_LEN = strlen(MQTT_CLIENTID);                                      //¼ÆËã¿Í»§¶ËIDµÄ³¤¶È
+	memset(MQTT_CLIENTID,128,0);                                               //?Í»???ID?Ä»?????È«??????
+	sprintf(MQTT_CLIENTID,"%s|securemode=3,signmethod=hmacsha1|",DEVICENAME);  //?????Í»???ID???????ë»º????
+	CLIENTID_LEN = strlen(MQTT_CLIENTID);                                      //?????Í»???ID?Ä³???
 	
-	memset(MQTT_USERNAME,128,0);                                               //ÓÃ»§ÃûµÄ»º³åÇøÈ«²¿ÇåÁã
-	sprintf(MQTT_USERNAME,"%s&%s",DEVICENAME,PRODUCTKEY);                      //¹¹½¨ÓÃ»§Ãû£¬²¢´æÈë»º³åÇø
-	USERNAME_LEN = strlen(MQTT_USERNAME);                                      //¼ÆËãÓÃ»§ÃûµÄ³¤¶È
+	memset(MQTT_USERNAME,128,0);                                               //?Ã»????Ä»?????È«??????
+	sprintf(MQTT_USERNAME,"%s&%s",DEVICENAME,PRODUCTKEY);                      //?????Ã»??û£¬²¢???ë»º????
+	USERNAME_LEN = strlen(MQTT_USERNAME);                                      //?????Ã»????Ä³???
 	
-	memset(temp,128,0);                                                                      //ÁÙÊ±»º³åÇøÈ«²¿ÇåÁã
-	sprintf(temp,"clientId%sdeviceName%sproductKey%s",DEVICENAME,DEVICENAME,PRODUCTKEY);     //¹¹½¨¼ÓÃÜÊ±µÄÃ÷ÎÄ   
-	utils_hmac_sha1(temp, strlen(temp), DEVICESECRE, DEVICESECRE_LEN, MQTT_PASSWD);                 //ÒÔDeviceSecretÎªÃØÔ¿¶ÔtempÖĞµÄÃ÷ÎÄ£¬½øĞĞhmacsha1¼ÓÃÜ£¬½á¹û¾ÍÊÇÃÜÂë£¬²¢±£´æµ½»º³åÇøÖĞ
-	PASSWD_LEN = strlen(MQTT_PASSWD);                                                         //¼ÆËãÓÃ»§ÃûµÄ³¤¶È
+	memset(temp,128,0);                                                                      //??Ê±??????È«??????
+	sprintf(temp,"clientId%sdeviceName%sproductKey%s",DEVICENAME,DEVICENAME,PRODUCTKEY);     //????????Ê±??????   
+	utils_hmac_sha1(temp, strlen(temp), DEVICESECRE, DEVICESECRE_LEN, MQTT_PASSWD);                 //??DeviceSecretÎª??Ô¿??temp?Ğµ????Ä£?????hmacsha1???Ü£????????????ë£¬?????æµ½????????
+	PASSWD_LEN = strlen(MQTT_PASSWD);                                                         //?????Ã»????Ä³???
 	
 	memset(MQTT_BROKERADDRESS,128,0);  
-	sprintf(MQTT_BROKERADDRESS,"%s.iot-as-mqtt.cn-shanghai.aliyuncs.com",PRODUCTKEY);                  //¹¹½¨·şÎñÆ÷ÓòÃû
-	MQTT_BROKERPORT = 1883;                                                                       //·şÎñÆ÷¶Ë¿ÚºÅ1883
+	sprintf(MQTT_BROKERADDRESS,"%s.iot-as-mqtt.cn-shanghai.aliyuncs.com",PRODUCTKEY);                  //??????????????
+	MQTT_BROKERPORT = 1883;                                                                       //???????Ë¿Úº?1883
 	
 	printf("\r\n");
-	printf("·ş Îñ Æ÷£º%s:%d\r\n",MQTT_BROKERADDRESS,MQTT_BROKERPORT); //´®¿ÚÊä³öµ÷ÊÔĞÅÏ¢
-	printf("¿Í»§¶ËID£º%s\r\n",MQTT_CLIENTID);               //´®¿ÚÊä³öµ÷ÊÔĞÅÏ¢
-	printf("ÓÃ »§ Ãû£º%s\r\n",MQTT_USERNAME);               //´®¿ÚÊä³öµ÷ÊÔĞÅÏ¢
-	printf("ÃÜ    Âë£º%s\r\n",MQTT_PASSWD);               //´®¿ÚÊä³öµ÷ÊÔĞÅÏ¢
+	printf("?? ?? ????%s:%d\r\n",MQTT_BROKERADDRESS,MQTT_BROKERPORT); //??????????????Ï¢
+	printf("?Í»???ID??%s\r\n",MQTT_CLIENTID);               //??????????????Ï¢
+	printf("?? ?? ????%s\r\n",MQTT_USERNAME);               //??????????????Ï¢
+	printf("??    ?ë£º%s\r\n",MQTT_PASSWD);               //??????????????Ï¢
 	printf("\r\n");
 }
 
@@ -139,43 +139,43 @@ int32_t mqtt_send_heart(void)
 		memset((void *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
 		g_esp8266_rx_cnt=0;	
 		
-		wait=3000;//µÈ´ı3sÊ±¼ä
+		wait=3000;//?È´?3sÊ±??
 		
 		while(wait--)
 		{
 			delay_ms(1);
 
-			//¼ì²éĞÄÌøÏìÓ¦¹Ì¶¨±¨Í·
+			//??????????Ó¦?Ì¶???Í·
 			if((g_esp8266_rx_buf[0]==0xD0) && (g_esp8266_rx_buf[1]==0x00)) 
 			{
-				printf("ĞÄÌøÏìÓ¦È·ÈÏ³É¹¦£¬·şÎñÆ÷ÔÚÏß\r\n");
+				printf("??????Ó¦È·?Ï³É¹?????????????\r\n");
 				return 0;
 			}
 		}
 	}
-	printf("ĞÄÌøÏìÓ¦È·ÈÏÊ§°Ü£¬·şÎñÆ÷ÀëÏß\r\n");
+	printf("??????Ó¦È·??Ê§?Ü£???????????\r\n");
 	return -1;
 #endif	
 
 }
 
-//MQTTÎŞÌõ¼ş¶Ï¿ª
+//MQTT???????Ï¿?
 void mqtt_disconnect(void)
 {
 	uint8_t buf[2]={0xe0,0x00};
-	//Éè±¸ÏÂÏß
+	//?è±¸????
     mqtt_send_bytes(buf,2);
-	//¶Ï¿ªÓëBROKERÁ¬½Ó
+	//?Ï¿???BROKERÁ¬??
 	esp8266_disconnect_server();
 }
 
 
 /**
- * @brief ¼ÆËãÊ£Óà³¤¶È²¢·µ»ØÕ¼ÓÃ×Ö½ÚÊı
+ * @brief ????Ê£?à³¤?È²?????Õ¼???Ö½???
  * 
- * @param buf ×ª»»ºóÒª´æ·ÅµÄµØÖ·
- * @param length Òª×ª»»µÄ×Ö½ÚÊı
- * @return int ×ª»»ºóÕ¼ÓÃµÄ×Ö½ÚÊı
+ * @param buf ×ª????Òª???ÅµÄµ?Ö·
+ * @param length Òª×ª?????Ö½???
+ * @return int ×ª????Õ¼?Ãµ??Ö½???
  */
 int mqtt_packet_encode(unsigned char *buf, int length)
 {
@@ -194,10 +194,10 @@ int mqtt_packet_encode(unsigned char *buf, int length)
 }
 
 /**
- * @brief Ê£Óà³¤¶È×ª»»ÎªÊ®½øÖÆÊı
- * @param buf Ê£Óà³¤¶ÈµØÖ·
- * @param length ×ª³ÉÊ®½øÖÆÊı´æ·Å
- * @return int Ê£Óà³¤¶ÈËùÕ¼×Ö½ÚÊı
+ * @brief Ê£?à³¤??×ª??ÎªÊ®??????
+ * @param buf Ê£?à³¤?Èµ?Ö·
+ * @param length ×ª??Ê®??????????
+ * @return int Ê£?à³¤????Õ¼?Ö½???
  */
 int mqtt_packet_decrypt_encode(const unsigned char *buf, int *length)
 {
@@ -279,42 +279,42 @@ int32_t mqtt_connect_packet(void)
     return 0;
 }
 
-//MQTT¶©ÔÄ/È¡Ïû¶©ÔÄÊı¾İ´ò°üº¯Êı
-//topic       Ö÷Ìâ
-//qos         ÏûÏ¢µÈ¼¶
-//whether     ¶©ÔÄ/È¡Ïû¶©ÔÄÇëÇó°ü
+//MQTT????/È¡?????????İ´???????
+//topic       ????
+//qos         ??Ï¢?È¼?
+//whether     ????/È¡????????????
 int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether)
 {	
     uint32_t topiclen = strlen(topic);
 
-    uint32_t data_len = 2 + (topiclen+2) + (whether?1:0);//¿É±ä±¨Í·µÄ³¤¶È£¨2×Ö½Ú£©¼ÓÉÏÓĞĞ§ÔØºÉµÄ³¤¶È
+    uint32_t data_len = 2 + (topiclen+2) + (whether?1:0);//?É±ä±¨Í·?Ä³??È£?2?Ö½Ú£???????Ğ§?ØºÉµÄ³???
 	
 	g_mqtt_tx_len=0;
 	
-    //¹Ì¶¨±¨Í·
-    //¿ØÖÆ±¨ÎÄÀàĞÍ
+    //?Ì¶???Í·
+    //???Æ±???????
     if(whether) 
-		g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x82; //ÏûÏ¢ÀàĞÍºÍ±êÖ¾¶©ÔÄ
+		g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x82; //??Ï¢???ÍºÍ±?Ö¾????
     else	
-		g_esp8266_tx_buf[g_mqtt_tx_len++] = 0xA2; //È¡Ïû¶©ÔÄ
+		g_esp8266_tx_buf[g_mqtt_tx_len++] = 0xA2; //È¡??????
 
-    //Ê£Óà³¤¶È
+    //Ê£?à³¤??
 	g_mqtt_tx_len += mqtt_packet_encode(&g_esp8266_tx_buf[g_mqtt_tx_len], data_len);
 
-    //¿É±ä±¨Í·
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = 0;				//ÏûÏ¢±êÊ¶·û MSB
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x01;           //ÏûÏ¢±êÊ¶·û LSB
+    //?É±ä±¨Í·
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = 0;				//??Ï¢??Ê¶?? MSB
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = 0x01;           //??Ï¢??Ê¶?? LSB
 	
-    //ÓĞĞ§ÔØºÉ
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(topiclen);//Ö÷Ìâ³¤¶È MSB
-    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(topiclen);//Ö÷Ìâ³¤¶È LSB
+    //??Ğ§?Øº?
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE1(topiclen);//???â³¤?? MSB
+    g_esp8266_tx_buf[g_mqtt_tx_len++] = BYTE0(topiclen);//???â³¤?? LSB
     memcpy(&g_esp8266_tx_buf[g_mqtt_tx_len],topic,topiclen);
 	
     g_mqtt_tx_len += topiclen;
 
     if(whether)
     {
-        g_esp8266_tx_buf[g_mqtt_tx_len++] = qos;//QoS¼¶±ğ
+        g_esp8266_tx_buf[g_mqtt_tx_len++] = qos;//QoS????
     }
 
 
@@ -437,9 +437,10 @@ void mqtt_receive_handle(unsigned char *recv_buf)
 	recv_length = recv_buf[0] | recv_buf[1] << 8;	
 	encode_len  = mqtt_packet_decrypt_encode(&p[1],&bytes);
 	
-	printf("recv_length  %d \r\n",recv_length);
-	printf("receive type %#02x\r\n",p[0]);
-	printf("encode_len  %d\r\n",encode_len);
+	printf("\r\n-------------------------------msg---------------------------\r\n");
+	printf("receive length:[%d] type:[%#02x] encode_len:[%d] encode_byte:[%d]\r\n",\
+												recv_length,p[0],encode_len,bytes);
+	printf("-----------------------------------------------------------------\r\n");
 	
 	switch(p[0])
 	{
@@ -485,4 +486,6 @@ void mqtt_receive_handle(unsigned char *recv_buf)
 		}break;
 		
 	}
+
+	printf("-----------------------------------------------------------------\r\n");
 }
