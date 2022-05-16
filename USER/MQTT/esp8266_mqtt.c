@@ -202,27 +202,27 @@ int mqtt_packet_encode(unsigned char *buf, int length)
 int mqtt_packet_decrypt_encode(const unsigned char *buf, int *length)
 {
 	int bytes = 0;
-	char ch, tmp;
+	char ch;
 	*length = 0;
 
-	do
+	
+	while(1)	
 	{
-		tmp = ch = buf[bytes];
-		if(tmp & 0x80)
-		{
-			tmp ^= 0x80;
-		}
-		*length += tmp * pow(128,bytes);
-		bytes++;
-	}while(ch & 0x80);
-	//è®¡ç®—æœ€åä¸€ä¸ªå­—èŠ‚
+		ch = buf[bytes];
+		
+		if(!(ch & 0x80))	//ºóÃæÃ»ÓĞÊı¾İÁË
+			break;
+		
+		*length += (ch^0x80) * pow(128,bytes++);
+	}
+	//¼ÆËã×îºóÒ»¸ö×Ö½Ú
 	*length += buf[bytes] * pow(128,bytes);
 	bytes++;
-
+	
 	return bytes;
 }
 
-//å‘é€MQTTè¿æ¥æŠ¥æ–‡
+//·¢ËÍÁ¬½Ó±¨ÎÄ
 int32_t mqtt_connect_packet(void)
 {
     uint32_t data_len;
@@ -279,10 +279,7 @@ int32_t mqtt_connect_packet(void)
     return 0;
 }
 
-//MQTT????/È¡?????????İ´???????
-//topic       ????
-//qos         ??Ï¢?È¼?
-//whether     ????/È¡????????????
+//mqtt¶©ÔÄ»òÈ¡Ïû¶©ÔÄ  1¶©ÔÄ  0È¡Ïû¶©ÔÄ
 int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether)
 {	
     uint32_t topiclen = strlen(topic);
@@ -437,7 +434,7 @@ void mqtt_receive_handle(unsigned char *recv_buf)
 	recv_length = recv_buf[0] | recv_buf[1] << 8;	
 	bytes  = mqtt_packet_decrypt_encode(&p[1],&encode_len);
 	
-	printf("\r\n-------------------------------msg------------------------------\r\n");
+	printf("\r\n--------------------------------msg------------------------------\r\n");
 	printf("receive length:[%d] type:[%#02x] encode_len:[%d] encode_byte:[%d]\r\n",\
 												recv_length,p[0],encode_len,bytes);
 	printf("-----------------------------------------------------------------\r\n");
@@ -474,13 +471,13 @@ void mqtt_receive_handle(unsigned char *recv_buf)
 		{
 			switch(p[4])
 			{
-				case 0:printf("subcribe success - Maximum QoS 0\r\n");
+				case 0x00:printf("subcribe success - Maximum QoS 0\r\n");
 				break;
-				case 1:printf("subcribe success - Maximum QoS 1\r\n");
+				case 0x01:printf("subcribe success - Maximum QoS 1\r\n");
 				break;
-				case 2:printf("subcribe success - Maximum QoS 2\r\n");
+				case 0x02:printf("subcribe success - Maximum QoS 2\r\n");
 				break;
-				case 128:printf("subcribe failure\r\n");
+				case 0x80:printf("subcribe failure\r\n");
 				break;
 			}
 		}break;
