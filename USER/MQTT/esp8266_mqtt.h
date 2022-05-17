@@ -25,8 +25,8 @@ extern int  USERNAME_LEN;
 extern char MQTT_PASSWD[128]; 
 extern int  PASSWD_LEN;
 
-#define	MQTT_PUBLISH_TOPIC 		"/sys/a10tC4OAAPc/smartdevice/thing/event/property/post"
-#define MQTT_SUBSCRIBE_TOPIC 	"/sys/a10tC4OAAPc/smartdevice/thing/service/property/set"
+#define MQTT_PUBLISH_TOPIC      "/sys/a1EExFlVDfn/D001/thing/event/property/post"
+#define MQTT_SUBSCRIBE_TOPIC    "/sys/a1EExFlVDfn/D001/thing/service/property/set"
 
 /****************************************************************************************************/
 
