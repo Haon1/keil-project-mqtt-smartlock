@@ -122,41 +122,14 @@ void mqtt_send_bytes(uint8_t *buf,uint32_t len)
     esp8266_send_bytes(buf,len);
 }
 
-//鍙戦�佸績璺冲寘
+//发送心跳包
 int32_t mqtt_send_heart(void)
 {	
 	uint8_t buf[2]={0xC0,0x00};
-    uint32_t cnt=2;
-    uint32_t wait=0;	
-	
-#if 0	
+
 	mqtt_send_bytes(buf,2);
+	
 	return 0;
-#else
-    while(cnt--)
-    {	
-		mqtt_send_bytes(buf,2);
-		memset((void *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
-		g_esp8266_rx_cnt=0;	
-		
-		wait=3000;//?却?3s时??
-		
-		while(wait--)
-		{
-			delay_ms(1);
-
-			//??????????应?潭???头
-			if((g_esp8266_rx_buf[0]==0xD0) && (g_esp8266_rx_buf[1]==0x00)) 
-			{
-				printf("??????应确?铣晒?????????????\r\n");
-				return 0;
-			}
-		}
-	}
-	printf("??????应确??失?埽???????????\r\n");
-	return -1;
-#endif	
-
 }
 
 //MQTT???????峡?
@@ -319,7 +292,6 @@ int32_t mqtt_subscribe_topic(char *topic,uint8_t qos,uint8_t whether)
 	memset((void *)g_esp8266_rx_buf,0,sizeof(g_esp8266_rx_buf));
 	mqtt_send_bytes(g_esp8266_tx_buf,g_mqtt_tx_len);
 		
-
 	
     return 0;
 }
@@ -425,6 +397,8 @@ int32_t esp8266_connect_ali_broker(void)
 //mqtt娑堟伅鎺ユ敹澶勭悊
 void mqtt_receive_handle(unsigned char *recv_buf)
 {
+	OS_ERR 		err;
+	
 	int	bytes;
 	unsigned short recv_length = 0;
 	unsigned char *p = recv_buf+2;
@@ -446,6 +420,8 @@ void mqtt_receive_handle(unsigned char *recv_buf)
 			if(p[3] == 0x00)
 			{
 				printf("The connection has been accepted by the server\r\n");
+				//设置标志位  可发送心跳包
+				OSFlagPost(&g_flag_grp,FLAG_GRP_PINGREQ_ENABLE,OS_OPT_POST_FLAG_SET,&err);
 			}
 			else
 			{

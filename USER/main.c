@@ -10,12 +10,12 @@
 #include "esp8266_mqtt.h"
 #include "includes.h"
 
-//mqtt msg deal callback
+//mqtt 接收消息处理 回调
 typedef void(*RecvCallBack)(unsigned char *recv_buf);
 RecvCallBack RCBS=NULL;
 
 
-// system init task
+// 系统初始化函数
 OS_TCB TASK_SYSTEM_INIT_TCB;
 void task_system_init(void *parg);
 CPU_STK task_system_init_stk[512];	
@@ -30,23 +30,29 @@ OS_TCB TASK_RTC_TCB;
 void task_rtc(void *parg);
 CPU_STK task_rtc_stk[512];	
 
-// mqtt connect task
+// mqtt 连接任务
 OS_TCB TASK_MQTT_CONNECT_TCB;
 void task_mqtt_connect(void *parg);
 CPU_STK task_mqtt_connect_stk[512];			
 
-//mqtt receive buffer deal task
+//mqtt 处理接收数据任务
 OS_TCB TASK_RX_BUF_DEAL_TCB;
 void task_rx_buf_deal(void *parg);
 CPU_STK task_rx_buf_deal_stk[128];
 
-// mqtt receive buffer deal task
+// mqtt 处理发送数据任务
 OS_TCB TASK_TX_BUF_DEAL_TCB;
 void task_tx_buf_deal(void *parg);
 CPU_STK task_tx_buf_deal_stk[128];	
 
 
-// kernel object
+//发送心跳包任务
+OS_TCB TASK_PINGREQ_TCB;
+void task_pingreq(void *parg);
+CPU_STK task_pingreq_stk[128];
+
+
+//内核对象 object
 OS_MUTEX				g_mutex_printf;		
 OS_FLAG_GRP   			g_flag_grp;			
 
@@ -70,7 +76,7 @@ void dgb_printf_safe(const char *format, ...)
 #endif
 }
 
-//mqtt receive callback register
+//mqtt 接收信息回调注册
 void RecvCBRegister(RecvCallBack pCBS)
 {
 	if(RCBS == NULL)
@@ -251,7 +257,23 @@ void task_system_init(void *parg)
 					&err													
 				);
 					
-	//	Delete its own task and enter the suspended state
+	//create task
+	OSTaskCreate(	(OS_TCB *)&TASK_PINGREQ_TCB,						
+					(CPU_CHAR *)"task_pingreq",							
+					(OS_TASK_PTR)task_pingreq,							
+					(void *)0,												
+					(OS_PRIO)6,
+					(CPU_STK *)task_pingreq_stk,
+					(CPU_STK_SIZE)128/10,
+					(CPU_STK_SIZE)128,
+					(OS_MSG_QTY)0,
+					(OS_TICK)0,
+					(void  *)0,
+					(OS_OPT)OS_OPT_TASK_NONE,								
+					&err													
+				);
+					
+	//Delete its own task and enter the suspended state
 	OSTaskDel(NULL,&err);
 }
 
@@ -291,6 +313,27 @@ void task_mqtt_connect(void *parg)
 	}
 }
 
+
+//mqtt pingreq
+void task_pingreq(void *parg)
+{
+	OS_ERR 		err;
+	uint32_t    cnt=1;
+	
+	printf("task_pingreq is create ok\r\n");
+		
+
+	while(1)
+	{
+		OSFlagPend(&g_flag_grp,FLAG_GRP_PINGREQ_ENABLE,0,\
+										OS_OPT_PEND_FLAG_SET_ALL+\
+										OS_OPT_PEND_BLOCKING, NULL, &err);
+		//发送心跳包
+		mqtt_send_heart();
+		while(cnt++ <=55 )
+			delay_ms(1000);
+	}
+}
 
 //Process the data in the receive buffer
 void task_rx_buf_deal(void *parg)
